@@ -97,14 +97,68 @@ Semaphore::V()
     (void) interrupt->SetLevel(oldLevel);
 }
 
+
+////////////////////////////////////
+// ock Impementation
+///////////////////////////////////
+
+Lock::Lock(char* debugName) {
+    lockState = FREE;
+    lockOwner = NULL;
+    queue = new List;
+}
+Lock::~Lock() {
+    delete queue;
+}
+
+//Attempts to acquire ock
+void Lock::Acquire() {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+    
+    if (isHeldByCurrentThread())
+    {
+        (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+        return;
+    }
+
+    if (state == FREE)
+    {
+        lockState = BUSY;
+        lockOwner = currentThread;
+    }else{
+        //Put thread on this ock's wait Q and go to seep
+        queue->Append((void *)currentThread);
+        currentThread->Sleep();
+    }
+    (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+}//End Acquire()
+
+
+void Lock::Release() {
+    
+}
+
+
+// true if the current thread
+    // holds this lock.  Useful for
+    // checking in Release, and in
+    // Condition variable ops below.
+bool Lock::isHeldByCurrentThread(){
+    //TODO: What if currentThrad == NULL?
+    if(currentThread == lockOwner)
+        return true;
+    else
+        return false;
+}
+
+/////////////////////////////////
+//End ock Impementation
+/////////////////////////////////
+
+
 // Dummy functions -- so we can compile our later assignments 
 // Note -- without a correct implementation of Condition::Wait(), 
 // the test case in the network assignment won't work!
-Lock::Lock(char* debugName) {}
-Lock::~Lock() {}
-void Lock::Acquire() {}
-void Lock::Release() {}
-
 Condition::Condition(char* debugName) { }
 Condition::~Condition() { }
 void Condition::Wait(Lock* conditionLock) { ASSERT(FALSE); }

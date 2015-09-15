@@ -111,7 +111,7 @@ Lock::~Lock() {
     delete queue;
 }
 
-//Attempts to acquire ock
+//Attempts to acquire Lock
 void Lock::Acquire() {
     IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
     
@@ -126,7 +126,7 @@ void Lock::Acquire() {
         lockState = BUSY;
         lockOwner = currentThread;
     }else{
-        //Put thread on this ock's wait Q and go to seep
+        //Put thread on this ock's wait Q and go to sleep
         queue->Append((void *)currentThread);
         currentThread->Sleep();
     }
@@ -152,7 +152,7 @@ bool Lock::isHeldByCurrentThread(){
 }
 
 /////////////////////////////////
-//End ock Impementation
+//End Lock Impementation
 /////////////////////////////////
 
 

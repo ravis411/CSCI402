@@ -134,9 +134,24 @@ void Lock::Acquire() {
 }//End Acquire()
 
 
+// Releases a lock and gives it to the next Thread in the Q
 void Lock::Release() {
-    
-}
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+    if(!isHeldByCurrentThread()){
+        //Only the current thread can release a lock
+        printf("%s: Only the lockOwner can release the lock\n", currentThread); //TODO is this the correct print message?
+        (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+        return;
+    }
+    if(queue->IsEmpty()){//Q not empty
+        lockOwner = (Thread *)queue->Remove();
+        scheduler->ReadyToRun(lockOwner);
+    }else{//Lock Q is empty
+        lockState = FREE;
+        lockOwner = NULL;
+    }
+    (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+}//End Release()
 
 
 // true if the current thread
@@ -144,7 +159,6 @@ void Lock::Release() {
     // checking in Release, and in
     // Condition variable ops below.
 bool Lock::isHeldByCurrentThread(){
-    //TODO: What if currentThrad == NULL?
     if(currentThread == lockOwner)
         return true;
     else

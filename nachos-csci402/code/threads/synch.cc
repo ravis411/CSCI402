@@ -173,8 +173,71 @@ bool Lock::isHeldByCurrentThread(){
 // Dummy functions -- so we can compile our later assignments 
 // Note -- without a correct implementation of Condition::Wait(), 
 // the test case in the network assignment won't work!
-Condition::Condition(char* debugName) { }
-Condition::~Condition() { }
-void Condition::Wait(Lock* conditionLock) { ASSERT(FALSE); }
-void Condition::Signal(Lock* conditionLock) { }
-void Condition::Broadcast(Lock* conditionLock) { }
+Condition::Condition(char* debugName) { 
+    waitingLock = NULL;
+    queue = new List;
+}
+
+Condition::~Condition() {
+    delete queue;
+ }
+
+void Condition::Wait(Lock* conditionLock) { 
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+    if(conditionLock == NULL){
+        printf("%s: conditionLock NULL\n", currentThread);
+        (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+        return;
+    }
+    if (waitingLock == NULL) //no one waiting
+    {
+        waitingLock = conditionLock;
+    }
+    if(conditionLock != waitingLock){
+        printf("%s: conditionLock != waitingLock\n", currentThread);
+        (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+        return;
+    }
+    //Ok to wait
+    //Add thread to CV wait Q
+    queue->Append((void *)currentThread);
+    waitingLock->Release();
+    currentThread->Sleep();
+    waitingLock->Acquire();
+    (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+}//End Wait()
+
+void Condition::Signal(Lock* conditionLock) {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+    if(waitingLock == NULL){ //if no thread waiting
+        (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+        return;
+    }
+    if(waitingLock != conditionLock){
+        printf("%s: Signal conditionLock != waitingLock\n", currentThread);
+        (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+        return;
+    }
+    //Wakeup 1 waiting thread
+     scheduler->ReadyToRun( (Thread *)queue->Remove() );
+     if(queue->IsEmpty()){
+        waitingLock == NULL;
+     }
+     (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+}
+
+void Condition::Broadcast(Lock* conditionLock) {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+    if(waitingLock == NULL){ //no threads to wake //TODO: Check this please
+        (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+        return;
+    }
+    if(conditionLock != waitingLock){
+        printf("%s: Broadcast conditionLock != waitingLock\n", currentThread);
+    }
+
+    (void) interrupt->SetLevel(oldLevel);   // restore interrupts
+    while(!queue->IsEmpty()){
+        Signal(conditionLock);
+    }
+}

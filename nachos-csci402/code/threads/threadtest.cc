@@ -11,6 +11,7 @@
 
 #include "copyright.h"
 #include "system.h"
+#include "test_code.cc" //The provided testcode
 
 //----------------------------------------------------------------------
 // SimpleThread
@@ -41,6 +42,10 @@ SimpleThread(int which)
 void
 ThreadTest()
 {
+    
+    TestSuite(); //This runs the TestSuite from test_code.cc hopefully
+
+	return;
     DEBUG('t', "Entering SimpleTest");
 
     Thread *t = new Thread("forked thread");

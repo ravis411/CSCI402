@@ -139,7 +139,7 @@ void Lock::Release() {
     IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
     if(!isHeldByCurrentThread()){
         //Only the current thread can release a lock
-        //printf("%s: Only the lockOwner can release the lock\n", currentThread->Print()); //TODO is this the correct print message?
+        printf("%s: Only the lockOwner can release the lock\n", currentThread->getName()); //TODO is this the correct print message?
         (void) interrupt->SetLevel(oldLevel);   // restore interrupts
         return;
     }
@@ -185,7 +185,7 @@ Condition::~Condition() {
 void Condition::Wait(Lock* conditionLock) { 
     IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
     if(conditionLock == NULL){
-        printf("%s: conditionLock NULL\n", currentThread->Print());
+        printf("%s: conditionLock NULL\n", currentThread->getName());
         (void) interrupt->SetLevel(oldLevel);   // restore interrupts
         return;
     }
@@ -194,7 +194,7 @@ void Condition::Wait(Lock* conditionLock) {
         waitingLock = conditionLock;
     }
     if(conditionLock != waitingLock){
-        printf("%s: conditionLock != waitingLock\n", currentThread->Print());
+        printf("%s: conditionLock != waitingLock\n", currentThread->getName());
         (void) interrupt->SetLevel(oldLevel);   // restore interrupts
         return;
     }
@@ -214,7 +214,7 @@ void Condition::Signal(Lock* conditionLock) {
         return;
     }
     if(waitingLock != conditionLock){
-        printf("%s: Signal conditionLock != waitingLock\n", currentThread->Print());
+        printf("%s: Signal conditionLock != waitingLock\n", currentThread->getName());
         (void) interrupt->SetLevel(oldLevel);   // restore interrupts
         return;
     }
@@ -233,7 +233,7 @@ void Condition::Broadcast(Lock* conditionLock) {
         return;
     }
     if(conditionLock != waitingLock){
-        printf("%s: Broadcast conditionLock != waitingLock\n", currentThread->Print());
+        printf("%s: Broadcast conditionLock != waitingLock\n", currentThread->getName());
     }
 
     (void) interrupt->SetLevel(oldLevel);   // restore interrupts

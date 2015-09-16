@@ -139,7 +139,7 @@ void Lock::Release() {
     IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
     if(!isHeldByCurrentThread()){
         //Only the current thread can release a lock
-        printf("%s: Only the lockOwner can release the lock\n", currentThread->Print()); //TODO is this the correct print message?
+        //printf("%s: Only the lockOwner can release the lock\n", currentThread->Print()); //TODO is this the correct print message?
         (void) interrupt->SetLevel(oldLevel);   // restore interrupts
         return;
     }

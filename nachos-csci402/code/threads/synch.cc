@@ -103,6 +103,7 @@ Semaphore::V()
 ///////////////////////////////////
 
 Lock::Lock(char* debugName) {
+    name = debugName;
     lockState = FREE;
     lockOwner = NULL;
     queue = new List;

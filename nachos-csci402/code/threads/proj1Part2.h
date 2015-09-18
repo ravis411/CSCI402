@@ -17,25 +17,21 @@ enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};		//enum for the CLERKSTATE
 
 
 //Initialize Locks, CVS, and Monitors?
-Lock clerkLineLock("clerkLineLock");						//The clerkLineLock
+Lock *clerkLineLock = new Lock("clerkLineLock");						//The clerkLineLock
 std::vector<int> clerkLineCount(CLERKCOUNT, 0);				//clerkLineCount
 std::vector<CLERKSTATE> clerkState(CLERKCOUNT, AVAILABLE);	//clerkState
-std::vector<Condition> clerkLineCV;
-std::vector<Lock> clerkLock;
-std::vector<Condition> clerkCV;
-for(int i = 0; i < CLERKCOUNT; i++){
-	clerkLineCV.push_back(new Condition("clerkLineCV" + i));
-	clerkLock.push_back(new Lock("clerkLock" + i));
-	clerkCV.push_back(new Condition("clerkCV" + i));
-}
-
+std::vector<Condition*> clerkLineCV;
+std::vector<Lock*> clerkLock;
+std::vector<Condition*> clerkCV;
+std::vector<int> clerkBribeLineCount(CLERKCOUNT, 0);
+std::vector<Condition*> clerkBribeLineCV;
 
 //The Customer thread
 void Customer(int id){
 	int SSN = id;	//The Customer's ID || SSN
-	printf("Customer %s: Initialized.\n", SSN);
+	printf("Customer %i: Initialized.\n", SSN);
 	clerkLineLock->Acquire();
-	printf("Customer %s: clerkLineLock Acquired.\n", SSN);
+	printf("Customer %i: clerkLineLock Acquired.\n", SSN);
 	//Can I go to counter, or have to wait?
 	//Pick shortest line with clerk not on break
 	int myLine = -1;
@@ -49,7 +45,7 @@ void Customer(int id){
 	if(clerkState[myLine] == BUSY){
 		//I must wait in line
 		clerkLineCount[myLine]++;
-		clerkLineCV[myLine]->wait(clerkLineLock);
+		clerkLineCV[myLine]->Wait(clerkLineLock);
 		clerkLineCount[myLine]--;
 	}
 	//Clerk is AVAILABLE
@@ -57,7 +53,7 @@ void Customer(int id){
 	clerkLineLock->Release();
 
 	//For now just return
-	printf("Customer %s: Done Returning.\n", SSN);
+	printf("Customer %i: Done Returning.\n", SSN);
 	return;
 	clerkLock[myLine]->Acquire();
 	//Give my data to clerk
@@ -75,8 +71,9 @@ void Customer(int id){
 //The Clerk thread
 void Clerk(int whatLine){
 
-	myLine = whatLine;
-	printf("Clerk %s: Initialized.\n", myLine);
+	int myLine = whatLine;
+	printf("Clerk %i: Initialized.\n", myLine);
+
 	while(true){
 		clerkLineLock->Acquire();
 		if(clerkBribeLineCount[myLine] > 0){
@@ -84,12 +81,12 @@ void Clerk(int whatLine){
 			clerkBribeLineCV[myLine]->Signal(clerkLineLock);
 			clerkState[myLine] = BUSY;
 		}else if(false && clerkLineCount[myLine] > 0){
-			printf("Clerk %s: Customer in line signalling...\n", myLine);
+			printf("Clerk %i: Customer in line signalling...\n", myLine);
 			clerkLineCV[myLine]->Signal(clerkLineLock);
 			clerkState[myLine] = BUSY;
 		}else{
 			//eventually go on break //for now
-			printf("Clerk %s: AVAILABLE.\n", myLine);
+			printf("Clerk %i: AVAILABLE.\n", myLine);
 			clerkState[myLine] = AVAILABLE;
 		}
 		//For now release lock and continue...?
@@ -116,12 +113,19 @@ void Clerk(int whatLine){
 //This runs the simulation
 void Part2TestSuit(){
 
+	for(int i = 0; i < CLERKCOUNT; i++){
+		clerkLineCV.push_back(new Condition("clerkLineCV" + i));
+		clerkBribeLineCV.push_back(new Condition("clerkLineCV" + i));
+		clerkLock.push_back(new Lock("clerkLock" + i));
+		clerkCV.push_back(new Condition("clerkCV" + i));
+	}
+
 	Thread *t;
 	t = new Thread("Customer 0");
 	t->Fork(Customer, 0);
 	t = new Thread("Customer 1");
 	t->Fork(Customer, 1);
-	t = new Thread('Customer 2');
+	t = new Thread("Customer 2");
 	t->Fork(Customer, 2);
 
 	t = new Thread("Clerk 0");

@@ -13,7 +13,7 @@ int CLERKCOUNT = 1;		//The number of clerks
 int CUSTOMERCOUNT = 2; 	//Number of customers
 
 //Globals or constants
-enum CLERKSTATE = {AVAILABLE, BUSY, ONBREAK};		//enum for the CLERKSTATE
+enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};		//enum for the CLERKSTATE
 
 
 //Initialize Locks, CVS, and Monitors?

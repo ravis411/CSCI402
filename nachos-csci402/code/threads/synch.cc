@@ -172,6 +172,7 @@ bool Lock::isHeldByCurrentThread(){
 // Note -- without a correct implementation of Condition::Wait(), 
 // the test case in the network assignment won't work!
 Condition::Condition(char* debugName) { 
+    name = debugName;
     waitingLock = NULL;
     queue = new List;
 }

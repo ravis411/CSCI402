@@ -12,6 +12,7 @@
 #include "copyright.h"
 #include "system.h"
 #include "synch.h"
+#include "proj1Part2.h"
 //#include "test_code.cc" //The provided testcode
 void TestSuite(); //forward declaration
 
@@ -44,8 +45,8 @@ SimpleThread(int which)
 void
 ThreadTest()
 {
-    
-    TestSuite(); //This runs the TestSuite from test_code.cc hopefully
+    Part2TestSuit(); //This runs the part2 simulation from proj1Part2.h hopefully
+    //TestSuite(); //This runs the TestSuite from test_code.cc hopefully
 
 	return;
     DEBUG('t', "Entering SimpleTest");

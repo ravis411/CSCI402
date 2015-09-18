@@ -31,8 +31,11 @@ for(int i = 0; i < CLERKCOUNT; i++){
 
 
 //The Customer thread
-void Customer(){
+void Customer(int id){
+	int SSN = id;	//The Customer's ID || SSN
+	printf("Customer %s: Initialized.\n", SSN);
 	clerkLineLock->Acquire();
+	printf("Customer %s: clerkLineLock Acquired.\n", SSN);
 	//Can I go to counter, or have to wait?
 	//Pick shortest line with clerk not on break
 	int myLine = -1;
@@ -52,7 +55,9 @@ void Customer(){
 	//Clerk is AVAILABLE
 	clerkState[myLine] = BUSY;
 	clerkLineLock->Release();
-	printf("Customer %s: Done Returning.\n", myLine);
+
+	//For now just return
+	printf("Customer %s: Done Returning.\n", SSN);
 	return;
 	clerkLock[myLine]->Acquire();
 	//Give my data to clerk
@@ -87,12 +92,13 @@ void Clerk(int whatLine){
 			printf("Clerk %s: AVAILABLE.\n", myLine);
 			clerkState[myLine] = AVAILABLE;
 		}
-		//For now continue...?
+		//For now release lock and continue...?
+		clerkLineLock->Release(); //remove this after testing.
 		continue;
 		//Should only do this when we are BUSY?
 		if(clerkState[myLine] == BUSY){
 			clerkLock[myLine]->Acquire();
-			clerkLineLock->Release();	//TODO: is this right?
+			clerkLineLock->Release();
 			//wait for customer data
 			clerkCV[myLine]->Wait(clerkLock[myLine]);
 			//Do my job - customer waiting
@@ -111,7 +117,15 @@ void Clerk(int whatLine){
 void Part2TestSuit(){
 
 	Thread *t;
-	for()
+	t = new Thread("Customer 0");
+	t->Fork(Customer, 0);
+	t = new Thread("Customer 1");
+	t->Fork(Customer, 1);
+	t = new Thread('Customer 2');
+	t->Fork(Customer, 2);
+
+	t = new Thread("Clerk 0");
+	t->Fork(Clerk, 0);
 
 }
 

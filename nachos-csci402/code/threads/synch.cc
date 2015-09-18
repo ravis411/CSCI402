@@ -144,7 +144,7 @@ void Lock::Release() {
         (void) interrupt->SetLevel(oldLevel);   // restore interrupts
         return;
     }
-    if(queue->IsEmpty()){//Q not empty
+    if(!queue->IsEmpty()){//Q not empty
         lockOwner = (Thread *)queue->Remove();
         scheduler->ReadyToRun(lockOwner);
     }else{//Lock Q is empty
@@ -160,10 +160,7 @@ void Lock::Release() {
     // checking in Release, and in
     // Condition variable ops below.
 bool Lock::isHeldByCurrentThread(){
-    if(currentThread == lockOwner)
-        return true;
-    else
-        return false;
+    return (currentThread == lockOwner);
 }
 
 /////////////////////////////////

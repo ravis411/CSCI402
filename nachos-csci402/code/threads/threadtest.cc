@@ -353,11 +353,9 @@ void TestSuite() {
 
     t = new Thread("t1_t3");
     t->Fork((VoidFunctionPtr)t1_t3,0);
-    printf("Debug: NO fault\n");
     // Wait for Test 1 to complete
     for (  i = 0; i < 2; i++ )
     t1_done.P();
-    printf("Debug: Fault\n");
     // Test 2
 
     printf("Starting Test 2.  Note that it is an error if thread t2_t2\n");

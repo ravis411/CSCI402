@@ -74,6 +74,7 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 	// Customer money is to be deterined randomly, in increments of $100, $600, $1100, and $1600.
 void Customer(int id){
 	int SSN = id;
+	int myLine = -1;
 
 
 	//Here are the output Guidelines for the Customer

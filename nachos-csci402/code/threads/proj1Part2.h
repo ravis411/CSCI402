@@ -47,8 +47,9 @@ void Customer(int id){
 	if(clerkState[myLine] == BUSY){
 		//I must wait in line
 		clerkLineCount[myLine]++;
-		printf("Customer %i: About to wait in line %i.\n", SSN, myLine);
+		printf("Customer %i: Clerk busy, about to wait in line %i.\n", SSN, myLine);
 		clerkLineCV[myLine]->Wait(clerkLineLock);
+		printf("Customer %i: Clerk signalled, done waiting.\n", SSN);
 		clerkLineCount[myLine]--;
 	}
 	//Clerk is AVAILABLE
@@ -56,8 +57,12 @@ void Customer(int id){
 	clerkLineLock->Release();
 
 	//For now just return
+	clerkLock[myLine]->Acquire();
+	clerkCV[myLine]->Signal(clerkLock[myLine]);
+	clerkLock[myLine]->Release();
 	printf("Customer %i: Done Returning.\n", SSN);
 	return;
+/*
 	clerkLock[myLine]->Acquire();
 	//Give my data to clerk
 	clerkCV[myLine]->Signal(clerkLock[myLine]);
@@ -66,6 +71,7 @@ void Customer(int id){
 	//read my data
 	clerkCV[myLine]->Signal(clerkLock[myLine]);
 	clerkLock[myLine]->Release();
+*/
 }//End Customer
 
 
@@ -77,16 +83,17 @@ void Clerk(int whatLine){
 	int myLine = whatLine;
 	printf("Clerk %i: Initialized.\n", myLine);
 
-	int loop = 0;
-	while(true && loop < 20){
+	while(true){
+
 		clerkLineLock->Acquire();
 		//printf("Clerk %i: LineLock acquired.\n", myLine);
-		if(clerkBribeLineCount[myLine] > 0){
+
+		if(false && clerkBribeLineCount[myLine] > 0){
 			
 			clerkBribeLineCV[myLine]->Signal(clerkLineLock);
 			clerkState[myLine] = BUSY;
-		}else if(false && clerkLineCount[myLine] > 0){
-			printf("Clerk %i: Customer in line signalling...\n", myLine);
+		}else if(clerkLineCount[myLine] > 0){
+			printf("Clerk %i: %i Customers in line, signalling...\n", myLine, clerkLineCount[myLine]);
 			clerkLineCV[myLine]->Signal(clerkLineLock);
 			clerkState[myLine] = BUSY;
 		}else{
@@ -95,10 +102,19 @@ void Clerk(int whatLine){
 			clerkState[myLine] = AVAILABLE;
 		}
 		//For now release lock and continue...?
-		clerkState[myLine] = AVAILABLE;
-		clerkLineLock->Release(); //remove this after testing.
-		continue;
-		//Should only do this when we are BUSY?
+		//remove this after testing.
+		if(clerkState[myLine] == BUSY){
+			clerkLock[myLine]->Acquire();
+			clerkLineLock->Release();
+			clerkCV[myLine]->Wait(clerkLock[myLine]);
+			clerkLock[myLine]->Release();
+			printf("Clerk Done continue\n");
+			continue;
+		}else{
+			currentThread->Yield();
+		}
+
+		/*//Should only do this when we are BUSY?
 		if(clerkState[myLine] == BUSY){
 			clerkLock[myLine]->Acquire();
 			clerkLineLock->Release();
@@ -108,8 +124,8 @@ void Clerk(int whatLine){
 			clerkCV[myLine]->Signal(clerkLock[myLine]);
 			clerkCV[myLine]->Wait(clerkLock[myLine]);
 			clerkLock[myLine]->Release();
-		}
-		loop++;
+		}*/
+
 	}
 }//End Clerk
 

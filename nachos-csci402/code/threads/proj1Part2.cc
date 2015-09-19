@@ -8,7 +8,8 @@
 #include "list.h"
 #include "vector"
 
-//Settings Variables
+//Settings Variables 
+//TODO:These should be more dynamic
 int CLERKCOUNT = 1;		//The number of clerks
 int CUSTOMERCOUNT = 3; 	//Number of customers
 
@@ -33,11 +34,20 @@ std::vector<Condition*> applicationClerkCV;
 //States
 std::vector<CLERKSTATE> clerkState(CLERKCOUNT, BUSY);	//clerkState
 std::vector<CLERKSTATE> applicationClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
+std::vector<CLERKSTATE> pictureClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
+std::vector<CLERKSTATE> passportClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
+std::vector<CLERKSTATE> cashierState(CLERKCOUNT, BUSY);	//applicationClerkState
 //LineCounts
 std::vector<int> clerkLineCount(CLERKCOUNT, 0);			//clerkLineCount
 std::vector<int> clerkBribeLineCount(CLERKCOUNT, 0);		//should be removed for testing only
 std::vector<int> applicationClerkLineCount(CLERKCOUNT, 0);			//applicationClerkLineCount
 std::vector<int> applicationClerkBribeLineCount(CLERKCOUNT, 0);		//applicationClerkBribeLineCount
+std::vector<int> pictureClerkLineCount(CLERKCOUNT, 0);			//pictureClerkLineCount
+std::vector<int> pictureClerkBribeLineCount(CLERKCOUNT, 0);		//pictureClerkBribeLineCount
+std::vector<int> passportClerkLineCount(CLERKCOUNT, 0);			//passportClerkLineCount
+std::vector<int> passportClerkBribeLineCount(CLERKCOUNT, 0);		//passportClerkBribeLineCount
+std::vector<int> cashierLineCount(CLERKCOUNT, 0);			//cashierLineCount
+std::vector<int> cashierBribeLineCount(CLERKCOUNT, 0);		//cashierBribeLineCount
 
 //
 //End variables

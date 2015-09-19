@@ -1,8 +1,8 @@
 // Group 25
 // Part2.h
 
-#ifndef PROJ1_PART2_H
-#define PROJ1_PART2_H
+#ifndef PROJ1_PART2_CC
+#define PROJ1_PART2_CC
 
 #include "synch.h"
 #include "list.h"
@@ -54,7 +54,7 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 
 
 //The Customer thread
-void Customer(int id){
+void CustomerTest(int id){
 	int SSN = id;	//The Customer's ID || SSN
 	printf("Customer %i: Initialized.\n", SSN);
 
@@ -102,8 +102,14 @@ void Customer(int id){
 */
 }//End Customer
 
+
+
+
+
+
+
 //The Clerk thread
-void Clerk(int whatLine){
+void ClerkTest(int whatLine){
 
 	int myLine = whatLine;
 	printf("Clerk %i: Initialized.\n", myLine);
@@ -158,6 +164,7 @@ void Clerk(int whatLine){
 //This runs the simulation
 void Part2TestSuit(){
 
+	//Initialize Variables
 	for(int i = 0; i < CLERKCOUNT; i++){
 		clerkLineCV.push_back(new Condition("clerkLineCV" + i));
 		clerkBribeLineCV.push_back(new Condition("clerkLineCV" + i));
@@ -165,16 +172,19 @@ void Part2TestSuit(){
 		clerkCV.push_back(new Condition("clerkCV" + i));
 	}
 
+
+
+	
 	Thread *t;
 	t = new Thread("Customer 0");
-	t->Fork(Customer, 0);
+	t->Fork(CustomerTest, 0);
 	t = new Thread("Customer 1");
-	t->Fork(Customer, 1);
+	t->Fork(CustomerTest, 1);
 	t = new Thread("Customer 2");
-	t->Fork(Customer, 2);
+	t->Fork(CustomerTest, 2);
 
 	t = new Thread("Clerk 0");
-	t->Fork(Clerk, 0);
+	t->Fork(ClerkTest, 0);
 
 }
 
@@ -187,4 +197,4 @@ void Part2TestSuit(){
 
 
 
-#endif//PROJ1_PART2_H
+#endif//PROJ1_PART2_CC

@@ -12,7 +12,7 @@
 #include "copyright.h"
 #include "system.h"
 #include "synch.h"
-#include "proj1Part2.h"
+#include "proj1Part2.cc"
 //#include "test_code.cc" //The provided testcode
 void TestSuite(); //forward declaration
 

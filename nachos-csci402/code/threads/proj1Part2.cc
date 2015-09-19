@@ -13,18 +13,35 @@ int CLERKCOUNT = 1;		//The number of clerks
 int CUSTOMERCOUNT = 3; 	//Number of customers
 
 //Globals or constants
-enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};		//enum for the CLERKSTATE
+enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
 
-
+///////////////////////////////////
 //Initialize Locks, CVS, and Monitors?
-Lock *clerkLineLock = new Lock("clerkLineLock");						//The clerkLineLock
-std::vector<int> clerkLineCount(CLERKCOUNT, 0);				//clerkLineCount
-std::vector<CLERKSTATE> clerkState(CLERKCOUNT, BUSY);	//clerkState
+//Locks
+Lock *clerkLineLock = new Lock("clerkLineLock");		//The clerkLineLock //for testing
+Lock *applicationClerkLineLock = new Lock('applicationClerkLineLock');	//The applicationClerkLineLock
+std::vector<Lock*> clerkLock;	//for testing//shouldberemoved
+std::vector<Lock*> applicationClerkLock;
+//CVS
 std::vector<Condition*> clerkLineCV;
-std::vector<Lock*> clerkLock;
+std::vector<Condition*> clerkBribeLineCV;	//clerkCVs //for testing should be removed
 std::vector<Condition*> clerkCV;
-std::vector<int> clerkBribeLineCount(CLERKCOUNT, 0);
-std::vector<Condition*> clerkBribeLineCV;
+
+std::vector<Condition*> applicationClerkLineCV;
+std::vector<Condition*> applicationClerkBribeLineCV;	//applicationClerk CVs
+std::vector<Condition*> applicationClerkCV;
+//States
+std::vector<CLERKSTATE> clerkState(CLERKCOUNT, BUSY);	//clerkState
+std::vector<CLERKSTATE> applicationClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
+//LineCounts
+std::vector<int> clerkLineCount(CLERKCOUNT, 0);			//clerkLineCount
+std::vector<int> clerkBribeLineCount(CLERKCOUNT, 0);		//should be removed for testing only
+std::vector<int> applicationClerkLineCount(CLERKCOUNT, 0);			//applicationClerkLineCount
+std::vector<int> applicationClerkBribeLineCount(CLERKCOUNT, 0);		//applicationClerkBribeLineCount
+
+//
+//End variables
+/////////////////////////////////
 
 
 
@@ -75,6 +92,7 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 void Customer(int id){
 	int SSN = id;
 	int myLine = -1;
+
 
 
 	//Here are the output Guidelines for the Customer

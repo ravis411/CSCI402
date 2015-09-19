@@ -32,6 +32,7 @@ std::vector<Condition*> clerkBribeLineCV;
 
 // Utility function to pick the shortest line
 //Customer has already chosen type of line to get in just needs to pick which line
+// It is assumed that the caller has a lock for the given MV
 //Parameters: 
 	//lineCount: a vector of the lineCount
 	//clerkState: a vector of the clerkState
@@ -51,6 +52,42 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 //End Utility Functions
 
 
+
+void Customer(int id){
+
+}
+
+//ApplicationClerk - an application clerk accepts a completed Application. 
+//	A completed Application requires an "completed" application and a Customer "social security number".
+//	You can assume that the Customer enters the passport office with a completed passport application. 
+//	The "social security number" can be a random number, or a sequentially increasing number. 
+//	In any event, it must be a unique number for each Customer.
+void ApplicationClerk(int id){
+
+}
+
+//PictureClerk - they take pictures of Customers. 
+	//Customers can turn in their application or get their picture taken in any order. 
+	//This is to be randomly determined by each customer when they are executing. 
+void PictureClerk(int id){
+
+}
+
+// PassportClerk - they check that a Customer has filed their completed application and has an official picture taken. 
+void PassportClerk(int id){
+
+}
+
+// Cashier - Once a PassportClerk has "certified" that a proper application has been completed,
+	// the Cashier will accept the $100 necessary to pay for the new passport.
+void Cashier(int id){
+
+}
+
+// Managers tell the various Clerks when to start working, when lines get too long. 
+void Manager(int id){
+
+}
 
 
 //The Customer thread

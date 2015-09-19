@@ -99,10 +99,17 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 	// Customer who can pay move in front of any Customer that has not paid. 
 	// HOWEVER, they do not move in front of any Customer that has also paid. 
 	// Customer money is to be deterined randomly, in increments of $100, $600, $1100, and $1600.
+void customerApplicationClerkInteraction(int SSN);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
 void Customer(int id){
 	int SSN = id;
 	int myLine = -1;
 
+
+	//Should I go to the applicationClerk first or get my picture taken first?
+	if(true){
+		//Go to application clerk
+		customerApplicationClerkInteraction(SSN);
+	}
 
 
 	//Here are the output Guidelines for the Customer
@@ -129,6 +136,46 @@ void Customer(int id){
 	}
 
 }//End Customer
+
+//TODO FIX THIS!!!!! JUST STARTED!!!!!!!!!!!
+//The Customer's Interaction with the applicationClerk
+void customerApplicationClerkInteraction(int SSN){
+	int myLine = -1;
+	bool bribe = false;
+	//I have decided to go to the applicationClerk
+
+	//I should acquire the line lock
+	applicationClerkLineLock->Acquire();
+	//lock acquired
+
+	//Can I go to counter, or have to wait? Should i bribe?
+	//Pick shortest line with clerk not on break
+	//Should i get in the regular line else i should bribe?
+	if(!bribe){ //Get in regular line
+		myLine = pickShortestLine(applicationClerkLineCount, applicationClerkState);
+	}else{ //get in bribe line
+		myLine = pickShortestLine(applicationClerkBribeLineCount, applicationClerkState);
+	}
+
+	if(applicationClerkState[myLine] == BUSY){
+		//I must wait in line
+		applicationClerkLineCount[myLine]++;
+		applicationClerkLineCV[myLine]->Wait(applicationClerkLineLock);
+		applicationClerkLineCount[myLine]--;
+	}
+	//Clerk is AVAILABLE
+	applicationClerkState[myLine] = BUSY;
+	clerkLineLock->Release();
+
+	//For now just return
+	clerkLock[myLine]->Acquire();
+	clerkCV[myLine]->Signal(clerkLock[myLine]);
+	clerkLock[myLine]->Release();
+	printf("Customer %i: Done Returning.\n", SSN);
+	return;
+}//End customerApplicationClerkInteraction
+
+
 
 
 

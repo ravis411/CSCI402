@@ -164,7 +164,7 @@ void ApplicationClerk(int id){
 	if(false){
 	int identifier = -1;
 	printf("ApplicationClerk %i has signalled a Customer to come to their counter.\n", myLine);
-	printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, identifier);
+	printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, identifier, identifier);
 	printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, identifier);
 	printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, identifier);
 	printf("ApplicationClerk %i is going on break.\n", myLine);
@@ -198,7 +198,7 @@ void PictureClerk(int id){
 	if(false){
 	int identifier = -1;
 	printf("PictureClerk %i has signalled a Customer to come to their counter.\n", myLine);
-	printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, identifier);
+	printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, identifier, identifier);
 	printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, identifier);
 	printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, identifier);
 	printf("PictureClerk %i has has been told that Customer %i does like their picture.\n", myLine, identifier);
@@ -228,7 +228,7 @@ void PassportClerk(int id){
 	if(false){
 	int identifier = -1;
 	printf("PassportClerk %i has signalled a Customer to come to their counter.\n", myLine);
-	printf("PassportClerk %i has received SSN %i from Customer %i.\n", myLine, identifier);
+	printf("PassportClerk %i has received SSN %i from Customer %i.\n", myLine, identifier, identifier);
 	printf("PassportClerk %i has determined that Customer %i does not have both their application and picture completed.\n", myLine, identifier);
 	printf("PassportClerk %i has determined that Customer %i has both their application and picture completed.\n", myLine, identifier);
 	printf("PassportClerk %i has recorded Customer %i passport documentation.\n", myLine, identifier);
@@ -272,7 +272,7 @@ void Cashier(int id){
 	if(false){
 	int identifier = -1;
 	printf("Cashier %i has signalled a Customer to come to their counter.\n", myLine);
-	printf("Cashier %i has received SSN %i from Customer %i.\n", myLine, identifier);
+	printf("Cashier %i has received SSN %i from Customer %i.\n", myLine, identifier, identifier);
 	printf("Cashier %i has verified that Customer %i has been certified by a PassportClerk.\n", myLine, identifier);
 	printf("Cashier %i has received the $100 from Customer %i after certification.\n", myLine, identifier);
 	printf("Cashier %i has recorded the $100 from Customer %i before certification. They are to go to the back of my line.\n", myLine, identifier);

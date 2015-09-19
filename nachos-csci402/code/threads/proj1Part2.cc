@@ -114,6 +114,27 @@ void Customer(int id){
 // Once a Senator is finished, all waiting Customers get to proceed as normal. 
 void Senator(int id){
 
+
+
+
+//Here are the output Guidelines for the Senator
+	if(false){
+	printf("Senator %i has gotten in regular line for ApplicationClerk %i.\n", SSN, myLine);
+	printf("Senator %i has gotten in regular line for PictureClerk %i.\n", SSN, myLine);
+	printf("Senator %i has gotten in regular line for PassportClerk %i.\n", SSN, myLine);
+	printf("Senator %i has gotten in regular line for Cashier %i.\n", SSN, myLine);
+	printf("Senator %i has given SSN %i to ApplicationClerk %i.\n", SSN, myLine);
+	printf("Senator %i has given SSN %i to PictureClerk %i.\n", SSN, myLine);
+	printf("Senator %i has given SSN %i to PassportClerk %i.\n", SSN, myLine);
+	printf("Senator %i has given SSN %i to Cashier %i.\n", SSN, myLine);
+	printf("Senator %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
+	printf("Senator %i does like their picture from PictureClerk %i.\n", SSN, myLine);
+	printf("Senator %i has gone to PassportClerk %i too soon. They are going to the back of the line.\n", SSN, myLine);
+	printf("Senator %i has gone to Cashier %i too soon. They are going to the back of the line.\n", SSN, myLine);
+	printf("Senator %i has given Cashier %i $100.", SSN, myLine);
+	printf("Senator %i is leaving the Passport Office.", SSN);
+	}
+
 } //End Senator
 
 
@@ -135,7 +156,20 @@ void Senator(int id){
 // There is always a delay in an accepted application being "filed".
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
 void ApplicationClerk(int id){
+	int myLine = id;
 
+
+
+	//Here are the output Guidelines for the ApplicationClerk
+	if(false){
+	int identifier = -1;
+	printf("ApplicationClerk %i has signalled a Customer to come to their counter.\n", myLine);
+	printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, identifier);
+	printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, identifier);
+	printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, identifier);
+	printf("ApplicationClerk %i is going on break.\n", myLine);
+	printf("ApplicationClerk %i is coming off break.\n", myLine);
+	}
 }//End ApplicationClerk
 
 
@@ -157,7 +191,20 @@ void ApplicationClerk(int id){
 // There is always a delay in an accepted picture being "filed". 
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
 void PictureClerk(int id){
+	int myLine = id;
 
+
+	//Here are the output Guidelines for the ApplicationClerk
+	if(false){
+	int identifier = -1;
+	printf("PictureClerk %i has signalled a Customer to come to their counter.\n", myLine);
+	printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, identifier);
+	printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, identifier);
+	printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, identifier);
+	printf("PictureClerk %i has has been told that Customer %i does like their picture.\n", myLine, identifier);
+	printf("PictureClerk %i is going on break.\n", myLine);
+	printf("PictureClerk %i is coming off break.\n", myLine);
+	}
 }//End PictureClerk
 
 
@@ -174,8 +221,30 @@ void PictureClerk(int id){
 	// After these calls are completed, ,the Customer goes to the back of the PassportClerk line.
 	// NOTE It takes time for a PassportClerk to "record" a Customer's completed documents. 
 void PassportClerk(int id){
+	int myLine = id;
+
+
+	//Here are the output Guidelines for the PassportClerk
+	if(false){
+	int identifier = -1;
+	printf("PassportClerk %i has signalled a Customer to come to their counter.\n", myLine);
+	printf("PassportClerk %i has received SSN %i from Customer %i.\n", myLine, identifier);
+	printf("PassportClerk %i has determined that Customer %i does not have both their application and picture completed.\n", myLine, identifier);
+	printf("PassportClerk %i has determined that Customer %i has both their application and picture completed.\n", myLine, identifier);
+	printf("PassportClerk %i has recorded Customer %i passport documentation.\n", myLine, identifier);
+	printf("PassportClerk %i is going on break.\n", myLine);
+	printf("PassportClerk %i is coming off break.\n", myLine);
+	}
 
 }//End PassportClerk
+
+
+
+
+
+
+
+
 
 // Cashier - Once a PassportClerk has "certified" that a proper application has been completed,
 	// the Cashier will accept the $100 necessary to pay for the new passport.
@@ -194,8 +263,33 @@ void PassportClerk(int id){
 	// or from those Customers wanting to move up in line must be added to the Cashier received money amount.
 // Cashiers go on break if they have no Customers in their line
 void Cashier(int id){
+	int myLine = id;
+
+
+
+
+	//Here are the output Guidelines for the Cashier
+	if(false){
+	int identifier = -1;
+	printf("Cashier %i has signalled a Customer to come to their counter.\n", myLine);
+	printf("Cashier %i has received SSN %i from Customer %i.\n", myLine, identifier);
+	printf("Cashier %i has verified that Customer %i has been certified by a PassportClerk.\n", myLine, identifier);
+	printf("Cashier %i has received the $100 from Customer %i after certification.\n", myLine, identifier);
+	printf("Cashier %i has recorded the $100 from Customer %i before certification. They are to go to the back of my line.\n", myLine, identifier);
+	printf("Cashier %i has provided Customer %i their completed passport.\n", myLine, identifier);
+    printf("Cashier %i has recorded that Customer %i has been given their completed passport.\n", myLine, identifier);
+	printf("Cashier %i is going on break.\n", myLine);
+	printf("Cashier %i is coming off break.\n", myLine);
+	}
+
+
 
 }//End Cashier
+
+
+
+
+
 
 // Managers tell the various Clerks when to start working, when lines get too long. 
 //
@@ -205,6 +299,22 @@ void Cashier(int id){
 	// You are to print the total received from each clerk type, and a total from all clerks.
 	// This is to be printed on a fairly regular basis.
 void Manager(int id){
+
+
+
+	//Here are the output Guidelines for the Cashier
+	if(false){
+	int identifier = -1;
+	printf("Manager has woken up an ApplicationClerk.\n");
+	printf("Manager has woken up an PictureClerk.\n");
+	printf("Manager has woken up an PassportClerk.\n");
+	printf("Manager has woken up an Cashier.\n");
+	printf("Manager has counted a total of $%i for ApplicationClerks.\n", identifier);
+	printf("Manager has counted a total of $%i for PictureClerks.\n", identifier);
+	printf("Manager has counted a total of $%i for PassportClerks.\n", identifier);
+	printf("Manager has counted a total of $%i for Cashiers.\n", identifier);
+	printf("Manager has counted a total of $%i for the passport office.\n", identifier);
+	}
 
 }//End Manager
 

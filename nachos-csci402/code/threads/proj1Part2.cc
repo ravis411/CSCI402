@@ -86,10 +86,10 @@ void Customer(int id){
 	printf("Customer %i has gotten in bribe line for PictureClerk %i.\n", SSN, myLine);
 	printf("Customer %i has gotten in bribe line for PassportClerk %i.\n", SSN, myLine);
 	printf("Customer %i has gotten in bribe line for Cashier %i.\n", SSN, myLine);
-	printf("Customer %i has given SSN %i to ApplicationClerk %i.\n", SSN, myLine);
-	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, myLine);
-	printf("Customer %i has given SSN %i to PassportClerk %i.\n", SSN, myLine);
-	printf("Customer %i has given SSN %i to Cashier %i.\n", SSN, myLine);
+	printf("Customer %i has given SSN %i to ApplicationClerk %i.\n", SSN, SSN, myLine);
+	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
+	printf("Customer %i has given SSN %i to PassportClerk %i.\n", SSN, SSN, myLine);
+	printf("Customer %i has given SSN %i to Cashier %i.\n", SSN, SSN, myLine);
 	printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
 	printf("Customer %i does like their picture from PictureClerk %i.\n", SSN, myLine);
 	printf("Customer %i has gone to PassportClerk %i too soon. They are going to the back of the line.\n", SSN, myLine);
@@ -113,7 +113,7 @@ void Customer(int id){
 	// Any Cusotmer showing up when a Senator is present must wait "outside" - a different line altogether.
 // Once a Senator is finished, all waiting Customers get to proceed as normal. 
 void Senator(int id){
-
+	int SSN = id;
 
 
 
@@ -123,10 +123,10 @@ void Senator(int id){
 	printf("Senator %i has gotten in regular line for PictureClerk %i.\n", SSN, myLine);
 	printf("Senator %i has gotten in regular line for PassportClerk %i.\n", SSN, myLine);
 	printf("Senator %i has gotten in regular line for Cashier %i.\n", SSN, myLine);
-	printf("Senator %i has given SSN %i to ApplicationClerk %i.\n", SSN, myLine);
-	printf("Senator %i has given SSN %i to PictureClerk %i.\n", SSN, myLine);
-	printf("Senator %i has given SSN %i to PassportClerk %i.\n", SSN, myLine);
-	printf("Senator %i has given SSN %i to Cashier %i.\n", SSN, myLine);
+	printf("Senator %i has given SSN %i to ApplicationClerk %i.\n", SSN, SSN, myLine);
+	printf("Senator %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
+	printf("Senator %i has given SSN %i to PassportClerk %i.\n", SSN, SSN, myLine);
+	printf("Senator %i has given SSN %i to Cashier %i.\n", SSN, SSN, myLine);
 	printf("Senator %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
 	printf("Senator %i does like their picture from PictureClerk %i.\n", SSN, myLine);
 	printf("Senator %i has gone to PassportClerk %i too soon. They are going to the back of the line.\n", SSN, myLine);

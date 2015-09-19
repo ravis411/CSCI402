@@ -10,7 +10,7 @@
 
 //Settings Variables
 int CLERKCOUNT = 1;		//The number of clerks
-int CUSTOMERCOUNT = 2; 	//Number of customers
+int CUSTOMERCOUNT = 3; 	//Number of customers
 
 //Globals or constants
 enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};		//enum for the CLERKSTATE
@@ -19,7 +19,7 @@ enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};		//enum for the CLERKSTATE
 //Initialize Locks, CVS, and Monitors?
 Lock *clerkLineLock = new Lock("clerkLineLock");						//The clerkLineLock
 std::vector<int> clerkLineCount(CLERKCOUNT, 0);				//clerkLineCount
-std::vector<CLERKSTATE> clerkState(CLERKCOUNT, AVAILABLE);	//clerkState
+std::vector<CLERKSTATE> clerkState(CLERKCOUNT, BUSY);	//clerkState
 std::vector<Condition*> clerkLineCV;
 std::vector<Lock*> clerkLock;
 std::vector<Condition*> clerkCV;
@@ -30,6 +30,7 @@ std::vector<Condition*> clerkBribeLineCV;
 void Customer(int id){
 	int SSN = id;	//The Customer's ID || SSN
 	printf("Customer %i: Initialized.\n", SSN);
+
 	clerkLineLock->Acquire();
 	printf("Customer %i: clerkLineLock Acquired.\n", SSN);
 	//Can I go to counter, or have to wait?
@@ -42,9 +43,11 @@ void Customer(int id){
 			lineSize = clerkLineCount[i];
 		}
 	}
+	printf("Customer %i: picked line/clerk %i.\n", SSN, myLine);
 	if(clerkState[myLine] == BUSY){
 		//I must wait in line
 		clerkLineCount[myLine]++;
+		printf("Customer %i: About to wait in line %i.\n", SSN, myLine);
 		clerkLineCV[myLine]->Wait(clerkLineLock);
 		clerkLineCount[myLine]--;
 	}
@@ -74,8 +77,10 @@ void Clerk(int whatLine){
 	int myLine = whatLine;
 	printf("Clerk %i: Initialized.\n", myLine);
 
-	while(true){
+	int loop = 0;
+	while(true && loop < 20){
 		clerkLineLock->Acquire();
+		//printf("Clerk %i: LineLock acquired.\n", myLine);
 		if(clerkBribeLineCount[myLine] > 0){
 			
 			clerkBribeLineCV[myLine]->Signal(clerkLineLock);
@@ -86,10 +91,11 @@ void Clerk(int whatLine){
 			clerkState[myLine] = BUSY;
 		}else{
 			//eventually go on break //for now
-			printf("Clerk %i: AVAILABLE.\n", myLine);
+			//printf("Clerk %i: AVAILABLE.\n", myLine);
 			clerkState[myLine] = AVAILABLE;
 		}
 		//For now release lock and continue...?
+		clerkState[myLine] = AVAILABLE;
 		clerkLineLock->Release(); //remove this after testing.
 		continue;
 		//Should only do this when we are BUSY?
@@ -103,6 +109,7 @@ void Clerk(int whatLine){
 			clerkCV[myLine]->Wait(clerkLock[myLine]);
 			clerkLock[myLine]->Release();
 		}
+		loop++;
 	}
 }//End Clerk
 

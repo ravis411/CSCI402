@@ -114,7 +114,7 @@ void Customer(int id){
 // Once a Senator is finished, all waiting Customers get to proceed as normal. 
 void Senator(int id){
 	int SSN = id;
-
+	int myLine = -1;
 
 
 //Here are the output Guidelines for the Senator

@@ -1,5 +1,5 @@
 // Group 25
-// Part2.h
+// Part2.cc
 
 #ifndef PROJ1_PART2_CC
 #define PROJ1_PART2_CC
@@ -32,7 +32,7 @@ std::vector<Condition*> clerkBribeLineCV;
 
 // Utility function to pick the shortest line
 //Customer has already chosen type of line to get in just needs to pick which line
-// It is assumed that the caller has a lock for the given MV
+//Assumptions: The caller has a lock for the given MVs
 //Parameters: 
 	//lineCount: a vector of the lineCount
 	//clerkState: a vector of the clerkState
@@ -73,8 +73,33 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 	// HOWEVER, they do not move in front of any Customer that has also paid. 
 	// Customer money is to be deterined randomly, in increments of $100, $600, $1100, and $1600.
 void Customer(int id){
+	int SSN = id;
 
-}
+
+	//Here are the output Guidelines for the Customer
+	if(false){
+	printf("Customer %i has gotten in regular line for ApplicationClerk %i.\n", SSN, myLine);
+	printf("Customer %i has gotten in regular line for PictureClerk %i.\n", SSN, myLine);
+	printf("Customer %i has gotten in regular line for PassportClerk %i.\n", SSN, myLine);
+	printf("Customer %i has gotten in regular line for Cashier %i.\n", SSN, myLine);
+	printf("Customer %i has gotten in bribe line for ApplicationClerk %i.\n", SSN, myLine);
+	printf("Customer %i has gotten in bribe line for PictureClerk %i.\n", SSN, myLine);
+	printf("Customer %i has gotten in bribe line for PassportClerk %i.\n", SSN, myLine);
+	printf("Customer %i has gotten in bribe line for Cashier %i.\n", SSN, myLine);
+	printf("Customer %i has given SSN %i to ApplicationClerk %i.\n", SSN, myLine);
+	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, myLine);
+	printf("Customer %i has given SSN %i to PassportClerk %i.\n", SSN, myLine);
+	printf("Customer %i has given SSN %i to Cashier %i.\n", SSN, myLine);
+	printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
+	printf("Customer %i does like their picture from PictureClerk %i.\n", SSN, myLine);
+	printf("Customer %i has gone to PassportClerk %i too soon. They are going to the back of the line.\n", SSN, myLine);
+	printf("Customer %i has gone to Cashier %i too soon. They are going to the back of the line.\n", SSN, myLine);
+	printf("Customer %i has given Cashier %i $100.", SSN, myLine);
+	printf("Customer %i is going outside the PassportOffice because there is a Senator present.", SSN);
+	printf("Customer %i is leaving the Passport Office.", SSN);
+	}
+
+}//End Customer
 
 
 

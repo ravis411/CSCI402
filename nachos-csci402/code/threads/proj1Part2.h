@@ -26,6 +26,33 @@ std::vector<Condition*> clerkCV;
 std::vector<int> clerkBribeLineCount(CLERKCOUNT, 0);
 std::vector<Condition*> clerkBribeLineCV;
 
+
+
+//Utility Functions
+
+// Utility function to pick the shortest line
+//Customer has already chosen type of line to get in just needs to pick which line
+//Parameters: 
+	//lineCount: a vector of the lineCount
+	//clerkState: a vector of the clerkState
+int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKSTATE>& pickShortestclerkState){
+	int myLine = -1;
+	int lineSize = 1000;
+	for(int i=0; i < CLERKCOUNT; i++){
+		//If lineCount < lineSize and clerk is not on break
+		if(pickShortestlineCount[i] < lineSize && pickShortestclerkState[i] != ONBREAK ){
+			myLine = i;
+			lineSize = pickShortestlineCount[i];
+		}
+	}
+	return myLine;	//This is the shortest line
+}//End pickShortestLine
+
+//End Utility Functions
+
+
+
+
 //The Customer thread
 void Customer(int id){
 	int SSN = id;	//The Customer's ID || SSN
@@ -33,16 +60,17 @@ void Customer(int id){
 
 	clerkLineLock->Acquire();
 	printf("Customer %i: clerkLineLock Acquired.\n", SSN);
-	//Can I go to counter, or have to wait?
+
+	//Can I go to counter, or have to wait? Should i bribe?
 	//Pick shortest line with clerk not on break
 	int myLine = -1;
-	int lineSize = 1000;
-	for(int i=0; i < CLERKCOUNT; i++){
-		if(clerkLineCount[i] < lineSize && clerkState[i] != ONBREAK){
-			myLine = i;
-			lineSize = clerkLineCount[i];
-		}
+	if(false){//Should i pick the bribe line?
+		myLine = pickShortestLine(clerkBribeLineCount, clerkState);
+	}else{
+		myLine = pickShortestLine(clerkLineCount, clerkState);
 	}
+	
+
 	printf("Customer %i: picked line/clerk %i.\n", SSN, myLine);
 	if(clerkState[myLine] == BUSY){
 		//I must wait in line
@@ -73,9 +101,6 @@ void Customer(int id){
 	clerkLock[myLine]->Release();
 */
 }//End Customer
-
-
-
 
 //The Clerk thread
 void Clerk(int whatLine){
@@ -128,9 +153,6 @@ void Clerk(int whatLine){
 
 	}
 }//End Clerk
-
-
-
 
 
 //This runs the simulation

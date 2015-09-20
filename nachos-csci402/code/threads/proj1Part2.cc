@@ -402,6 +402,7 @@ void Senator(int id){
 // ApplicationClerks go on break if they have no Customers in their line.
 // There is always a delay in an accepted application being "filed".
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
+void applicationClerkcheckAndGoOnBreak(int myLine); //Too many of these forward declarations
 void ApplicationClerk(int id){
 	int myLine = id;
 	int money = 0;
@@ -421,12 +422,9 @@ void ApplicationClerk(int id){
 			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else{
-			//eventually go on break //for now //?
-			applicationClerkState[myLine] = ONBREAK;
-			printf("ApplicationClerk %i is going on break.\n", myLine);
-			applicationClerkBreakCV->Wait(applicationClerkLineLock);
-			printf("ApplicationClerk %i is coming off break.\n", myLine);
-			applicationClerkState[myLine] = AVAILABLE;
+			//No Customers
+			//Go on break
+			applicationClerkcheckAndGoOnBreak(myLine);
 		}
 
 		//Should only do this when we are BUSY? When we have a customer...
@@ -456,6 +454,26 @@ void ApplicationClerk(int id){
 
 }//End ApplicationClerk
 
+//Utility for applicationClerk to gon on brak
+// Assumptions: called with clerkLineLock
+applicationClerkcheckAndGoOnBreak(int myLine){
+	//Only go on break if there is at least one other clerk
+	bool freeOrAvailable = false;
+	for(int i = 0; i < CLERKCOUNT; i++){
+		if(i != myLine && ( applicationClerkState[i] == AVAILABLE || applicationClerkState[i] == BUSY ) ){
+			freeOrAvailable = true;
+			break;
+		}
+	}
+	//There is at least one clerk...go on a break.
+	if(freeOrAvailable){
+		applicationClerkState[myLine] = ONBREAK;
+		printf("ApplicationClerk %i is going on break.\n", myLine);
+		applicationClerkBreakCV->Wait(applicationClerkLineLock);
+		printf("ApplicationClerk %i is coming off break.\n", myLine);
+	}
+	applicationClerkState[myLine] = AVAILABLE;
+}
 
 
 

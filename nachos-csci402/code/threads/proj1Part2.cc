@@ -471,6 +471,8 @@ void applicationClerkcheckAndGoOnBreak(int myLine){
 		printf("ApplicationClerk %i is going on break.\n", myLine);
 		applicationClerkBreakCV->Wait(applicationClerkLineLock);
 		printf("ApplicationClerk %i is coming off break.\n", myLine);
+	}else{
+		currentThread->Yield();
 	}
 	applicationClerkState[myLine] = AVAILABLE;
 }
@@ -547,7 +549,7 @@ void PictureClerk(int id){
 			}
 	
 		}
-		
+
 }//End PictureClerk
 
 //Utility for pictureClerk to go on brak
@@ -567,6 +569,8 @@ void pictureClerkcheckAndGoOnBreak(int myLine){
 		printf("PictureClerk %i is going on break.\n", myLine);
 		pictureClerkBreakCV->Wait(pictureClerkLineLock);
 		printf("PictureClerk %i is coming off break.\n", myLine);
+	}else{
+		currentThread->Yield();
 	}
 	pictureClerkState[myLine] = AVAILABLE;
 }

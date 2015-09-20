@@ -289,10 +289,6 @@ void ApplicationClerk(int id){
 
 	//Here are the output Guidelines for the ApplicationClerk
 	if(false){
-	
-	
-	
-	
 	printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, identifier);
 	printf("ApplicationClerk %i is going on break.\n", myLine);
 	printf("ApplicationClerk %i is coming off break.\n", myLine);

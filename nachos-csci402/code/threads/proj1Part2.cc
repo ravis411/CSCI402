@@ -581,7 +581,7 @@ void Part2TestSuit(){
 		applicationClerkCV.push_back(new Condition("applicationClerkCV" + i));
 
 		pictureClerkLock.push_back(new Lock("pictureClerkLock" + i));
-		picutreClerkLineCV.push_back(new Condition("picutreClerkLineCV" + i));
+		pictureClerkLineCV.push_back(new Condition("picutreClerkLineCV" + i));
 		pictureClerkBribeLineCV.push_back(new Condition("pictureClerkBribeLineCV" + i));
 		pictureClerkCV.push_back(new Condition("pictureClerkCV" + i));
 	}

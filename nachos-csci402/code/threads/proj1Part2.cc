@@ -12,7 +12,7 @@
 
 //Settings Variables 
 //TODO:These should be more dynamic
-int CLERKCOUNT = 2;		//The number of clerks
+int CLERKCOUNT = 1;		//The number of clerks
 int CUSTOMERCOUNT = 3; 	//Number of customers
 
 //Globals or constants
@@ -128,17 +128,19 @@ void Customer(int id){
 	int money = (rand()%4)*500 + 100;
 
 	//Should I go to the applicationClerk first or get my picture taken first?
-	if(rand() % 2){
+	if(false && rand() % 2){
 		//Go to application clerk first
 		customerApplicationClerkInteraction(SSN, money);
+		return;
 		customerPictureClerkInteraction(SSN, money);
 	}
 	else {
 		//Go to the picture clerk first
 		customerPictureClerkInteraction(SSN, money);
+		return;
 		customerApplicationClerkInteraction(SSN, money);
 	}
-
+	return;
 	customerPassportClerkInteraction(SSN, money);
 
 	//Here are the output Guidelines for the Customer
@@ -680,7 +682,7 @@ void Manager(int id){
 		
 
 
-
+		currentThread->Yield();
 	}
 
 
@@ -770,7 +772,7 @@ void Part2TestSuit(){
 	
 	for(int i = 0; i < CLERKCOUNT; i++){
 		t = new Thread("ApplicationClerk " + i);
-		t->Fork(ApplicationClerk, i);
+		//t->Fork(ApplicationClerk, i);
 
 		t = new Thread("PictureClerk " + i);
 		t->Fork(PictureClerk, i);

@@ -174,7 +174,6 @@ void customerApplicationClerkInteraction(int SSN){
 	//Clerk is AVAILABLE
 	applicationClerkState[myLine] = BUSY;
 	applicationClerkLineLock->Release();
-
 	//Lets talk to clerk
 	applicationClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
@@ -259,18 +258,18 @@ void ApplicationClerk(int id){
 		//If there is someone in my bribe line
 		if(applicationClerkBribeLineCount[myLine] > 0){
 			
-			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
+			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else if(applicationClerkLineCount[myLine] > 0){//if there is someone in my regular line
-			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
+			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else{
 			//eventually go on break //for now //?
 			applicationClerkState[myLine] = AVAILABLE;
 		}
 
-		//Should only do this when we are BUSY? We have a customer...
-		if(clerkState[myLine] == BUSY){
+		//Should only do this when we are BUSY? When we have a customer...
+		if(applicationClerkState[myLine] == BUSY){
 			printf("ApplicationClerk %i has signalled a Customer to come to their counter.\n", myLine);
 			applicationClerkLock[myLine]->Acquire();
 			applicationClerkLineLock->Release();
@@ -283,7 +282,7 @@ void ApplicationClerk(int id){
 			
 			//Do my job - customer waiting
 
-			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, identifier);
+			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, customerSSN);
 			//Signal Customer that I'm Done.
 			applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
 			//applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);//Idk if this is needed...

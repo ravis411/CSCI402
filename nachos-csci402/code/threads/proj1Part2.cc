@@ -12,7 +12,7 @@
 
 //Settings Variables 
 //TODO:These should be more dynamic
-int CLERKCOUNT = 1;		//The number of clerks
+int CLERKCOUNT = 2;		//The number of clerks
 int CUSTOMERCOUNT = 3; 	//Number of customers
 
 //Globals or constants
@@ -21,27 +21,24 @@ enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
 ///////////////////////////////////
 //Initialize Locks, CVS, and Monitors?
 //Locks
-Lock *clerkLineLock = new Lock("clerkLineLock");		//The clerkLineLock //for testing
 Lock *applicationClerkLineLock = new Lock("applicationClerkLineLock");	//The applicationClerkLineLock
-std::vector<Lock*> clerkLock;	//for testing//shouldberemoved
+Lock *pictureClerkLineLock = new Lock("pictureClerkLineLock");	//The applicationClerkLineLock
 std::vector<Lock*> applicationClerkLock;
+std::vector<Lock*> pictureClerkLock;
 //CVS
-std::vector<Condition*> clerkLineCV;
-std::vector<Condition*> clerkBribeLineCV;	//clerkCVs //for testing should be removed
-std::vector<Condition*> clerkCV;
-
 std::vector<Condition*> applicationClerkLineCV;
 std::vector<Condition*> applicationClerkBribeLineCV;	//applicationClerk CVs
 std::vector<Condition*> applicationClerkCV;
+
+std::vector<Condition*> pictureClerkLineCV;
+std::vector<Condition*> pictureClerkBribeLineCV;	//pictureClerk CVs
+std::vector<Condition*> pictureClerkCV;
 //States
-std::vector<CLERKSTATE> clerkState(CLERKCOUNT, BUSY);	//clerkState
 std::vector<CLERKSTATE> applicationClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
 std::vector<CLERKSTATE> pictureClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
 std::vector<CLERKSTATE> passportClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
 std::vector<CLERKSTATE> cashierState(CLERKCOUNT, BUSY);	//applicationClerkState
 //LineCounts
-std::vector<int> clerkLineCount(CLERKCOUNT, 0);			//clerkLineCount
-std::vector<int> clerkBribeLineCount(CLERKCOUNT, 0);		//should be removed for testing only
 std::vector<int> applicationClerkLineCount(CLERKCOUNT, 0);			//applicationClerkLineCount
 std::vector<int> applicationClerkBribeLineCount(CLERKCOUNT, 0);		//applicationClerkBribeLineCount
 std::vector<int> pictureClerkLineCount(CLERKCOUNT, 0);			//pictureClerkLineCount
@@ -193,7 +190,6 @@ void customerApplicationClerkInteraction(int SSN){
 	//Clerk is AVAILABLE
 	applicationClerkState[myLine] = BUSY;
 	applicationClerkLineLock->Release();
-
 	//Lets talk to clerk
 	applicationClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
@@ -414,8 +410,8 @@ void ApplicationClerk(int id){
 			applicationClerkState[myLine] = AVAILABLE;
 		}
 
-		//Should only do this when we are BUSY? We have a customer...
-		if(clerkState[myLine] == BUSY){
+		//Should only do this when we are BUSY? When we have a customer...
+		if(applicationClerkState[myLine] == BUSY){
 			printf("ApplicationClerk %i has signalled a Customer to come to their counter.\n", myLine);
 			applicationClerkLock[myLine]->Acquire();
 			applicationClerkLineLock->Release();
@@ -425,11 +421,12 @@ void ApplicationClerk(int id){
 			//And I have a lock
 			int customerSSN = applicationClerkSharedData[myLine];
 			printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
-			
+
 			//Do my job - customer waiting - then yield before submitting
 			for(int i = 0; i < rand()%81 + 20; i++) { currentThread->Yield(); }
 			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, identifier);
 			applicationCompletion[customerSSN] = 1;
+
 			//Signal Customer that I'm Done.
 			applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
 			//applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);//Idk if this is needed...
@@ -687,113 +684,6 @@ void Manager(int id){
 
 
 
-//The Customer thread
-//This was used for testing and as an example should be removed eventually
-void CustomerTest(int id){
-	int SSN = id;	//The Customer's ID || SSN
-	printf("Customer %i: Initialized.\n", SSN);
-
-	clerkLineLock->Acquire();
-	printf("Customer %i: clerkLineLock Acquired.\n", SSN);
-
-	//Can I go to counter, or have to wait? Should i bribe?
-	//Pick shortest line with clerk not on break
-	int myLine = -1;
-	if(false){//Should i pick the bribe line?
-		myLine = pickShortestLine(clerkBribeLineCount, clerkState);
-	}else{
-		myLine = pickShortestLine(clerkLineCount, clerkState);
-	}
-	
-
-	printf("Customer %i: picked line/clerk %i.\n", SSN, myLine);
-	if(clerkState[myLine] == BUSY){
-		//I must wait in line
-		clerkLineCount[myLine]++;
-		printf("Customer %i: Clerk busy, about to wait in line %i.\n", SSN, myLine);
-		clerkLineCV[myLine]->Wait(clerkLineLock);
-		printf("Customer %i: Clerk signalled, done waiting.\n", SSN);
-		clerkLineCount[myLine]--;
-	}
-	//Clerk is AVAILABLE
-	clerkState[myLine] = BUSY;
-	clerkLineLock->Release();
-
-	//For now just return
-	clerkLock[myLine]->Acquire();
-	clerkCV[myLine]->Signal(clerkLock[myLine]);
-	clerkLock[myLine]->Release();
-	printf("Customer %i: Done Returning.\n", SSN);
-	return;
-/*
-	clerkLock[myLine]->Acquire();
-	//Give my data to clerk
-	clerkCV[myLine]->Signal(clerkLock[myLine]);
-	//wait for clerk to do their job
-	clerkCV[myLine]->Wait(clerkLock[myLine]);
-	//read my data
-	clerkCV[myLine]->Signal(clerkLock[myLine]);
-	clerkLock[myLine]->Release();
-*/
-}//End Customer
-
-
-
-
-
-
-
-//The Clerk thread
-void ClerkTest(int whatLine){
-
-	int myLine = whatLine;
-	printf("Clerk %i: Initialized.\n", myLine);
-
-	while(true){
-
-		clerkLineLock->Acquire();
-		//printf("Clerk %i: LineLock acquired.\n", myLine);
-
-		if(false && clerkBribeLineCount[myLine] > 0){
-			
-			clerkBribeLineCV[myLine]->Signal(clerkLineLock);
-			clerkState[myLine] = BUSY;
-		}else if(clerkLineCount[myLine] > 0){
-			printf("Clerk %i: %i Customers in line, signalling...\n", myLine, clerkLineCount[myLine]);
-			clerkLineCV[myLine]->Signal(clerkLineLock);
-			clerkState[myLine] = BUSY;
-		}else{
-			//eventually go on break //for now
-			//printf("Clerk %i: AVAILABLE.\n", myLine);
-			clerkState[myLine] = AVAILABLE;
-		}
-		//For now release lock and continue...?
-		//remove this after testing.
-		if(clerkState[myLine] == BUSY){
-			clerkLock[myLine]->Acquire();
-			clerkLineLock->Release();
-			clerkCV[myLine]->Wait(clerkLock[myLine]);
-			clerkLock[myLine]->Release();
-			printf("Clerk Done continue\n");
-			continue;
-		}else{
-			currentThread->Yield();
-		}
-
-		/*//Should only do this when we are BUSY?
-		if(clerkState[myLine] == BUSY){
-			clerkLock[myLine]->Acquire();
-			clerkLineLock->Release();
-			//wait for customer data
-			clerkCV[myLine]->Wait(clerkLock[myLine]);
-			//Do my job - customer waiting
-			clerkCV[myLine]->Signal(clerkLock[myLine]);
-			clerkCV[myLine]->Wait(clerkLock[myLine]);
-			clerkLock[myLine]->Release();
-		}*/
-
-	}
-}//End Clerk
 
 
 //This runs the simulation
@@ -801,30 +691,34 @@ void Part2TestSuit(){
 
 	//Initialize dynamic variables
 	for(int i = 0; i < CLERKCOUNT; i++){
-		clerkLineCV.push_back(new Condition("clerkLineCV" + i));
-		clerkBribeLineCV.push_back(new Condition("clerkLineCV" + i));
-		clerkLock.push_back(new Lock("clerkLock" + i));
-		clerkCV.push_back(new Condition("clerkCV" + i));
-
 		applicationClerkLock.push_back(new Lock("applicationClerkLock" + i));
 		applicationClerkLineCV.push_back(new Condition("applicationClerkLineCV" + i));
 		applicationClerkBribeLineCV.push_back(new Condition("applicationClerkBribeLineCV" + i));
 		applicationClerkCV.push_back(new Condition("applicationClerkCV" + i));
+
+		pictureClerkLock.push_back(new Lock("pictureClerkLock" + i));
+		pictureClerkLineCV.push_back(new Condition("picutreClerkLineCV" + i));
+		pictureClerkBribeLineCV.push_back(new Condition("pictureClerkBribeLineCV" + i));
+		pictureClerkCV.push_back(new Condition("pictureClerkCV" + i));
 	}
 
 
 
-	
 	Thread *t;
-	t = new Thread("Customer 0");
-	t->Fork(Customer, 0);
-	t = new Thread("Customer 1");
-	t->Fork(Customer, 1);
-	t = new Thread("Customer 2");
-	t->Fork(Customer, 2);
 
-	t = new Thread("Clerk 0");
-	t->Fork(ApplicationClerk, 0);
+	for(int i = 0; i < CUSTOMERCOUNT; i++){
+		t = new Thread("Customer " + i);
+		t->Fork(Customer, i);
+	}
+	
+	for(int i = 0; i < CLERKCOUNT; i++){
+		t = new Thread("ApplicationClerk " + i);
+		t->Fork(ApplicationClerk, i);
+
+		t = new Thread("PictureClerk " + i);
+		t->Fork(PictureClerk, i);
+	}
+	
 
 }
 

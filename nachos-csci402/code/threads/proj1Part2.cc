@@ -1,3 +1,4 @@
+
 // Group 25
 // Part2.cc
 
@@ -13,9 +14,6 @@
 //TODO:These should be more dynamic
 int CLERKCOUNT = 1;		//The number of clerks
 int CUSTOMERCOUNT = 3; 	//Number of customers
-
-std::vector<bool> completedApplications(CUSTOMERCOUNT, 0);
-std::vector<bool> completedPicture(CUSTOMERCOUNT, 0);
 
 //Globals or constants
 enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
@@ -54,7 +52,8 @@ std::vector<int> cashierLineCount(CLERKCOUNT, 0);			//cashierLineCount
 std::vector<int> cashierBribeLineCount(CLERKCOUNT, 0);		//cashierBribeLineCount
 //Shared Data //Should only be accessed with the corresponding lock / cv
 std::vector<int> applicationClerkSharedData(CLERKCOUNT, 0);	//This can be used by the customer to pass SSN
-
+std::vector<int> pictureClerkSharedDataSSN(CLERKCOUNT,0); //This can be used by the customer to pass SSN
+std::vector<int> pictureClerkSharedDataPicture(CLERKCOUNT,0); // This can be used by the customer to pass acceptance of the picture
 //
 //End variables
 /////////////////////////////////
@@ -244,19 +243,24 @@ void customerPictureClerkInteraction(int SSN){
 	//Lets talk to clerk
 	pictureClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
-	//TODO: How do we do that exactly??
+	//We already have a lock so put my SSN in applicationClerkSharedData
+	applicationClerkSharedData[myLine] = SSN;
 	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
-	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
-	//Wait for clerk to do their job
-	pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
-	// TODO: if rejected how to keep trying???
-	if(rand()%10 > 7) {
-		printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
-	}
-	else {
-		printf("Customer %i does like their picture from PictureClerk %i.\n", SSN, myLine);
-	}
 	
+	while(pictureClerkSharedDataPicture[myLine] == 0) {
+
+		pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+		//Wait for clerk to take the picture
+		pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
+		if(rand()%10 > 7) {
+			printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
+			pictureClerkSharedDataPicture[myLine] = 0;
+		}
+		else {
+			printf("Customer %i does like their picture from PictureClerk %i.\n", SSN, myLine);
+			pictureClerkSharedDataPicture[myLine] = 1;
+		}
+	}
 
 	//Done
 	
@@ -392,10 +396,54 @@ void ApplicationClerk(int id){
 // There is always a delay in an accepted picture being "filed". 
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
 void PictureClerk(int id){
-	int myLine = id;
+		int myLine = id;
+		int identifier = -1; //TODO: Placeholder should be removed.
 
+		//Keep running
+		while(true){
+	
+			pictureClerkLineLock->Acquire();
 
-	//Here are the output Guidelines for the ApplicationClerk
+			//If there is someone in my bribe line
+			if(pictureClerkBribeLineCount[myLine] > 0){
+			
+				pictureClerkLineCV[myLine]->Signal(pictureClerkLineLock);
+				pictureClerkState[myLine] = BUSY;
+			}else if(pictureClerkLineCount[myLine] > 0){//if there is someone in my regular line
+				pictureClerkBribeLineCV[myLine]->Signal(pictureClerkLineLock);
+				pictureClerkState[myLine] = BUSY;
+			}else{
+				//eventually go on break //for now //?
+				pictureClerkState[myLine] = AVAILABLE;
+			}
+
+			//Should only do this when we are BUSY? We have a customer...
+			if(clerkState[myLine] == BUSY){
+				printf("PictureClerk %i has signalled a Customer to come to their counter.\n", myLine);
+				pictureClerkLock[myLine]->Acquire();
+				pictureClerkLineLock->Release();
+				//wait for customer data
+				pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
+				//Customer Has given me their SSN?
+				//And I have a lock
+				int customerSSN = pictureClerkSharedData[myLine];
+				printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
+				
+				while(pictureClerkSharedDataPicture[myLine] == 0) {
+					//Signal Customer that I'm Done and show them the picture.
+					pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+				}
+				printf("PictureClerk %i has recorded a completed picture for Customer %i.\n", myLine, identifier);
+				//Signal Customer that I'm Done.
+				pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+				//pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);//Idk if this is needed...
+				pictureClerkLock[myLine]->Release();
+			}
+	
+		}
+	
+
+	//Here are the output Guidelines for the PictureClerk
 	if(false){
 	int identifier = -1;
 	printf("PictureClerk %i has signalled a Customer to come to their counter.\n", myLine);

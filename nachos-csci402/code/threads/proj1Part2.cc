@@ -280,7 +280,8 @@ void customerPictureClerkInteraction(int SSN, int money){
 			pictureClerkSharedDataPicture[myLine] = 1;
 		}
 	}
-
+	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+	pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 	//Done
 	
 	pictureClerkLock[myLine]->Release();
@@ -508,17 +509,17 @@ void PictureClerk(int id){
 				printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
 				bool first = true;
 				while(pictureClerkSharedDataPicture[myLine] == 0) {
-					if(!first) { 	printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, identifier); }
-					printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, identifier);
+					if(!first) { 	printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, customerSSN); }
+					printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, customerSSN);
 					//Signal Customer that I'm Done and show them the picture.
 					pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 					pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 					first = false;
 				}
-				printf("PictureClerk %i has has been told that Customer %i does like their picture.\n", myLine, identifier);
+				printf("PictureClerk %i has has been told that Customer %i does like their picture.\n", myLine, customerSSN);
 				//Yield before submitting.
 				for(int i = 0; i < rand()%81 + 20; i++) { currentThread->Yield(); }
-				printf("PictureClerk %i has recorded a completed picture for Customer %i.\n", myLine, identifier);
+				printf("PictureClerk %i has recorded a completed picture for Customer %i.\n", myLine, customerSSN);
 				pictureCompletion[customerSSN] = 1;
 				//Signal Customer that I'm Done.
 				pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);

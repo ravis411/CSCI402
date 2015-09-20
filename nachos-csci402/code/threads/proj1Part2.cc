@@ -48,6 +48,8 @@ std::vector<int> passportClerkLineCount(CLERKCOUNT, 0);			//passportClerkLineCou
 std::vector<int> passportClerkBribeLineCount(CLERKCOUNT, 0);		//passportClerkBribeLineCount
 std::vector<int> cashierLineCount(CLERKCOUNT, 0);			//cashierLineCount
 std::vector<int> cashierBribeLineCount(CLERKCOUNT, 0);		//cashierBribeLineCount
+//Shared Data //Should only be accessed with the corresponding lock / cv
+std::vector<int> applicationClerkSharedData(CLERKCOUNT, 0);	//This can be used by the customer to pass SSN
 
 //
 //End variables
@@ -176,7 +178,8 @@ void customerApplicationClerkInteraction(int SSN){
 	//Lets talk to clerk
 	applicationClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
-	//TODO: How do we do that exactly??
+	//We already have a lock so put my SSN in applicationClerkSharedData
+	applicationClerkSharedData[myLine] = SSN;
 	printf("Customer %i has given SSN %i to ApplicationClerk %i.\n", SSN, SSN, myLine);
 	applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
 	//Wait for clerk to do their job
@@ -274,7 +277,9 @@ void ApplicationClerk(int id){
 			//wait for customer data
 			applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);
 			//Customer Has given me their SSN?
-			printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, identifier, identifier);
+			//And I have a lock
+			int customerSSN = applicationClerkSharedData[myLine];
+			printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
 			
 			//Do my job - customer waiting
 

@@ -52,6 +52,8 @@ std::vector<int> passportClerkLineCount(CLERKCOUNT, 0);			//passportClerkLineCou
 std::vector<int> passportClerkBribeLineCount(CLERKCOUNT, 0);		//passportClerkBribeLineCount
 std::vector<int> cashierLineCount(CLERKCOUNT, 0);			//cashierLineCount
 std::vector<int> cashierBribeLineCount(CLERKCOUNT, 0);		//cashierBribeLineCount
+//Shared Data //Should only be accessed with the corresponding lock / cv
+std::vector<int> applicationClerkSharedData(CLERKCOUNT, 0);	//This can be used by the customer to pass SSN
 
 //
 //End variables
@@ -188,13 +190,14 @@ void customerApplicationClerkInteraction(int SSN){
 	//Lets talk to clerk
 	applicationClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
-	//TODO: How do we do that exactly??
+	//We already have a lock so put my SSN in applicationClerkSharedData
+	applicationClerkSharedData[myLine] = SSN;
 	printf("Customer %i has given SSN %i to ApplicationClerk %i.\n", SSN, SSN, myLine);
 	applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
 	//Wait for clerk to do their job
 	applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);
-	//Done
 	
+	//Done
 	applicationClerkLock[myLine]->Release();
 	//Done Return
 	return;
@@ -319,56 +322,51 @@ void Senator(int id){
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
 void ApplicationClerk(int id){
 	int myLine = id;
+	int identifier = -1; //TODO: Placeholder should be removed.
 
 	//Keep running
 	while(true){
 
 		applicationClerkLineLock->Acquire();
-		//printf("Clerk %i: LineLock acquired.\n", myLine);
 
+		//If there is someone in my bribe line
 		if(applicationClerkBribeLineCount[myLine] > 0){
 			
-			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
+			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
-		}else if(applicationClerkLineCount[myLine] > 0){
+		}else if(applicationClerkLineCount[myLine] > 0){//if there is someone in my regular line
 			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else{
 			//eventually go on break //for now //?
 			applicationClerkState[myLine] = AVAILABLE;
 		}
-		//For now release lock and continue...?
-		//remove this after testing.
-		if(applicationClerkState[myLine] == BUSY){
-			clerkLock[myLine]->Acquire();
-			applicationClerkLineLock->Release();
-			clerkCV[myLine]->Wait(clerkLock[myLine]);
-			clerkLock[myLine]->Release();
-			continue;
-		}else{
-			currentThread->Yield();
-		}
 
-		/*//Should only do this when we are BUSY?
+		//Should only do this when we are BUSY? We have a customer...
 		if(clerkState[myLine] == BUSY){
-			clerkLock[myLine]->Acquire();
+			printf("ApplicationClerk %i has signalled a Customer to come to their counter.\n", myLine);
+			applicationClerkLock[myLine]->Acquire();
 			applicationClerkLineLock->Release();
 			//wait for customer data
-			clerkCV[myLine]->Wait(clerkLock[myLine]);
+			applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);
+			//Customer Has given me their SSN?
+			//And I have a lock
+			int customerSSN = applicationClerkSharedData[myLine];
+			printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
+			
 			//Do my job - customer waiting
-			clerkCV[myLine]->Signal(clerkLock[myLine]);
-			clerkCV[myLine]->Wait(clerkLock[myLine]);
-			clerkLock[myLine]->Release();
-		}*/
+
+			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, identifier);
+			//Signal Customer that I'm Done.
+			applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
+			//applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);//Idk if this is needed...
+			applicationClerkLock[myLine]->Release();
+		}
 
 	}
 
 	//Here are the output Guidelines for the ApplicationClerk
 	if(false){
-	int identifier = -1;
-	printf("ApplicationClerk %i has signalled a Customer to come to their counter.\n", myLine);
-	printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, identifier, identifier);
-	printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, identifier);
 	printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, identifier);
 	printf("ApplicationClerk %i is going on break.\n", myLine);
 	printf("ApplicationClerk %i is coming off break.\n", myLine);

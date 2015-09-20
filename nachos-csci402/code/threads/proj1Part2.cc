@@ -265,12 +265,13 @@ void customerPictureClerkInteraction(int SSN, int money){
 	//We already have a lock so put my SSN in pictureClerkSharedData
 	pictureClerkSharedDataSSN[myLine] = SSN;
 	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
-	
+	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+	pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 	while(pictureClerkSharedDataPicture[myLine] == 0) {
 
-		pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+		
 		//Wait for clerk to take the picture
-		pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
+		
 		if(rand()%10 > 7) {
 			printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
 			pictureClerkSharedDataPicture[myLine] = 0;
@@ -529,6 +530,7 @@ void PictureClerk(int id){
 				int customerSSN = pictureClerkSharedDataSSN[myLine];
 				printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
 				bool first = true;
+				pictureClerkSharedDataPicture[myLine] = 0;
 				while(pictureClerkSharedDataPicture[myLine] == 0) {
 					if(!first) { 	printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, customerSSN); }
 					printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, customerSSN);

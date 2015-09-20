@@ -54,6 +54,12 @@ std::vector<int> cashierBribeLineCount(CLERKCOUNT, 0);		//cashierBribeLineCount
 std::vector<int> applicationClerkSharedData(CLERKCOUNT, 0);	//This can be used by the customer to pass SSN
 std::vector<int> pictureClerkSharedDataSSN(CLERKCOUNT,0); //This can be used by the customer to pass SSN
 std::vector<int> pictureClerkSharedDataPicture(CLERKCOUNT,0); // This can be used by the customer to pass acceptance of the picture
+std::vector<int> passportClerkSharedDataSSN(CLERKCOUNT, 0); //This can be used by the customer to pass SSN
+std::vector<bool> applicationCompletion(CUSTOMERCOUNT, 0); //Used by passportCerkto verify that application has been completed
+std::vector<bool> pictureCompletion(CUSTOMERCOUNT, 0); //Used by passportClerk to verify that picture has beeen completed 
+std::vector<bool> passportCompletion(CUSTOMERCOUNT,0); // Used by cashier to verify that the passport is complete
+std::vector<int> passportPunishment(CUSTOMERCOUNT, 0); //Used by passportClerk to punish bad people.
+
 //
 //End variables
 /////////////////////////////////
@@ -124,6 +130,7 @@ void Customer(int id){
 		customerApplicationClerkInteraction(SSN);
 	}
 
+	customerPassportClerkInteraction(SSN);
 
 	//Here are the output Guidelines for the Customer
 	if(false){
@@ -147,7 +154,7 @@ void Customer(int id){
 
 }//End Customer
 
-//TODO: FIX THIS!!!!! JUST STARTED!!!!!!!!!!!
+
 //The Customer's Interaction with the applicationClerk
 //    Get their application accepted by the ApplicationClerk
 void customerApplicationClerkInteraction(int SSN){
@@ -179,6 +186,7 @@ void customerApplicationClerkInteraction(int SSN){
 			applicationClerkBribeLineCount[myLine]++;
 			printf("Customer %i has gotten in bribe line for ApplicationClerk %i.\n", SSN, myLine);
 			applicationClerkBribeLineCV[myLine]->Wait(applicationClerkLineLock);
+			money -= 500;
 			applicationClerkBribeLineCount[myLine]--;
 		}
 	}
@@ -233,6 +241,7 @@ void customerPictureClerkInteraction(int SSN){
 			pictureClerkBribeLineCount[myLine]++;
 			printf("Customer %i has gotten in bribe line for PictureClerk %i.\n", SSN, myLine);
 			pictureClerkBribeLineCV[myLine]->Wait(pictureClerkLineLock);
+			money -= 500;
 			pictureClerkBribeLineCount[myLine]--;
 		}
 	}
@@ -243,8 +252,8 @@ void customerPictureClerkInteraction(int SSN){
 	//Lets talk to clerk
 	pictureClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
-	//We already have a lock so put my SSN in applicationClerkSharedData
-	applicationClerkSharedData[myLine] = SSN;
+	//We already have a lock so put my SSN in pictureClerkSharedData
+	pictureClerkSharedData[myLine] = SSN;
 	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
 	
 	while(pictureClerkSharedDataPicture[myLine] == 0) {
@@ -269,7 +278,65 @@ void customerPictureClerkInteraction(int SSN){
 	return;
 }//End customerPictureClerkInteraction
 
+void customerPassportClerkInteraction(int SSN){
+	int myLine = -1;
+	bool bribe = (money > 500) && (rand()%2);
 
+	//I should acquire the line lock
+	passportClerkLineLock->Acquire();
+	//lock acquired
+
+	//Can I go to counter, or have to wait? Should i bribe?
+	//Pick shortest line with clerk not on break
+	//Should i get in the regular line else i should bribe?
+	if(!bribe){ //Get in regular line
+		myLine = pickShortestLine(passportClerkLineCount, passportClerkState);
+	}else{ //get in bribe line
+		myLine = pickShortestLine(passportClerkBribeLineCount, passportClerkState);
+	}
+	
+	//I must wait in line
+	if(passportClerkState[myLine] == BUSY){
+		if(!bribe){
+			passportClerkLineCount[myLine]++;
+			printf("Customer %i has gotten in regular line for PassportClerk %i.\n", SSN, myLine);
+			passportClerkLineCV[myLine]->Wait(passportClerkLineLock);
+			passportClerkLineCount[myLine]--;
+		}else{
+			passportClerkBribeLineCount[myLine]++;
+			printf("Customer %i has gotten in bribe line for PassportClerk %i.\n", SSN, myLine);
+			passportClerkBribeLineCV[myLine]->Wait(passportClerkLineLock);
+			money -= 500;
+			passportClerkBribeLineCount[myLine]--;
+		}
+	}
+	//Clerk is AVAILABLE
+	passportClerkState[myLine] = BUSY;
+	passportClerkLineLock->Release();
+
+	//Lets talk to clerk
+	passportClerkLock[myLine]->Acquire();
+	//Give my data to my clerk
+	//We already have a lock so put my SSN in passportClerkSharedData
+	passportClerkSharedData[myLine] = SSN;
+	printf("Customer %i has given SSN %i to PassportClerk %i.\n", SSN, SSN, myLine);
+	passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
+	//Wait for clerk to do their job
+	passportClerkCV[myLine]->Wait(passportClerkLock[myLine];
+	while(passportPunishment[SSN] > 0) {
+		for(int i = 0; i < rand()%901 + 100; i++ ) { currentThread->Yield(); }
+		passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
+		passportClerkCV[myLine]->Wait(passportClerkLock[myLine];
+	}
+	
+	//Done
+	applicationClerkLock[myLine]->Release();
+	//Done Return
+	return;
+
+
+
+}//End of customerPassportClerkInteraction
 
 
 //Senator: 
@@ -326,20 +393,21 @@ void Senator(int id){
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
 void ApplicationClerk(int id){
 	int myLine = id;
-	int identifier = -1; //TODO: Placeholder should be removed.
-
-	//Keep running
+	int money = 0;
+	
+//Keep running
 	while(true){
 
 		applicationClerkLineLock->Acquire();
 
 		//If there is someone in my bribe line
 		if(applicationClerkBribeLineCount[myLine] > 0){
-			
-			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
+			money += 500;
+			printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, identifier);
+			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else if(applicationClerkLineCount[myLine] > 0){//if there is someone in my regular line
-			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
+			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else{
 			//eventually go on break //for now //?
@@ -358,9 +426,10 @@ void ApplicationClerk(int id){
 			int customerSSN = applicationClerkSharedData[myLine];
 			printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
 			
-			//Do my job - customer waiting
-
+			//Do my job - customer waiting - then yield before submitting
+			for(int i = 0; i < rand()%81 + 20; i++) { currentThread->Yield(); }
 			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, identifier);
+			applicationCompletion[customerSSN] = 1;
 			//Signal Customer that I'm Done.
 			applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
 			//applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);//Idk if this is needed...
@@ -371,7 +440,7 @@ void ApplicationClerk(int id){
 
 	//Here are the output Guidelines for the ApplicationClerk
 	if(false){
-	printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, identifier);
+
 	printf("ApplicationClerk %i is going on break.\n", myLine);
 	printf("ApplicationClerk %i is coming off break.\n", myLine);
 	}
@@ -397,7 +466,7 @@ void ApplicationClerk(int id){
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
 void PictureClerk(int id){
 		int myLine = id;
-		int identifier = -1; //TODO: Placeholder should be removed.
+		int money = 0;
 
 		//Keep running
 		while(true){
@@ -406,11 +475,11 @@ void PictureClerk(int id){
 
 			//If there is someone in my bribe line
 			if(pictureClerkBribeLineCount[myLine] > 0){
-			
-				pictureClerkLineCV[myLine]->Signal(pictureClerkLineLock);
+				money += 500;
+				pictureClerkBribeLineCV[myLine]->Signal(pictureClerkLineLock);
 				pictureClerkState[myLine] = BUSY;
 			}else if(pictureClerkLineCount[myLine] > 0){//if there is someone in my regular line
-				pictureClerkBribeLineCV[myLine]->Signal(pictureClerkLineLock);
+				pictureClerkLineCV[myLine]->Signal(pictureClerkLineLock);
 				pictureClerkState[myLine] = BUSY;
 			}else{
 				//eventually go on break //for now //?
@@ -428,12 +497,19 @@ void PictureClerk(int id){
 				//And I have a lock
 				int customerSSN = pictureClerkSharedData[myLine];
 				printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
-				
+				bool first = true;
 				while(pictureClerkSharedDataPicture[myLine] == 0) {
+					if(!first) { 	printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, identifier); }
+					printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, identifier);
 					//Signal Customer that I'm Done and show them the picture.
 					pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+					first = false;
 				}
+				printf("PictureClerk %i has has been told that Customer %i does like their picture.\n", myLine, identifier);
+				//Yield before submitting.
+				for(int i = 0; i < rand()%81 + 20; i++) { currentThread->Yield(); }
 				printf("PictureClerk %i has recorded a completed picture for Customer %i.\n", myLine, identifier);
+				pictureCompletion[customerSSN] = 1;
 				//Signal Customer that I'm Done.
 				pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 				//pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);//Idk if this is needed...
@@ -445,12 +521,7 @@ void PictureClerk(int id){
 
 	//Here are the output Guidelines for the PictureClerk
 	if(false){
-	int identifier = -1;
-	printf("PictureClerk %i has signalled a Customer to come to their counter.\n", myLine);
-	printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, identifier, identifier);
-	printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, identifier);
-	printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, identifier);
-	printf("PictureClerk %i has has been told that Customer %i does like their picture.\n", myLine, identifier);
+
 	printf("PictureClerk %i is going on break.\n", myLine);
 	printf("PictureClerk %i is coming off break.\n", myLine);
 	}
@@ -471,16 +542,60 @@ void PictureClerk(int id){
 	// NOTE It takes time for a PassportClerk to "record" a Customer's completed documents. 
 void PassportClerk(int id){
 	int myLine = id;
+	int money = 0;
+	
+	//Keep running
+	while(true){
+
+		passportClerkLineLock->Acquire();
+
+		//If there is someone in my bribe line
+		if(passportClerkBribeLineCount[myLine] > 0){
+			money += 500;
+			passportClerkBribeLineCV[myLine]->Signal(passportClerkLineLock);
+			passportClerkState[myLine] = BUSY;
+		}else if(passportClerkLineCount[myLine] > 0){//if there is someone in my regular line
+			passportClerkLineCV[myLine]->Signal(passportClerkLineLock);
+			passportClerkState[myLine] = BUSY;
+		}else{
+			//eventually go on break //for now //?
+			passportClerkState[myLine] = AVAILABLE;
+		}
+
+		//Should only do this when we are BUSY? We have a customer...
+		if(clerkState[myLine] == BUSY){
+			printf("PassportClerk %i has signalled a Customer to come to their counter.\n", myLine);
+			passportClerkLock[myLine]->Acquire();
+			passportClerkLineLock->Release();
+			//wait for customer data
+			passportClerkCV[myLine]->Wait(passportClerkLock[myLine]);
+			//Customer Has given me their SSN?
+			//And I have a lock
+			int customerSSN = passportClerkSharedDataSSN[myLine];
+			printf("PassportClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
+			
+			//Do my job - customer waiting
+			while(applicationCompletion[customerSSN] == 0 && pictureCompletion[customerSSN] == 0) {
+				passportPunishment[customerSSN]++;
+				printf("PassportClerk %i has determined that Customer %i does not have both their application and picture completed.\n", myLine, identifier);
+
+			}
+			passportPunishment[customerSSN] = 0;
+			printf("PassportClerk %i has determined that Customer %i has both their application and picture completed.\n", myLine, identifier);
+			passportCompletion[customerSSN] = true;
+			printf("PassportClerk %i has recorded Customer %i passport documentation.\n", myLine, identifier);
+			//Signal Customer that I'm Done.
+			passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
+			//passportClerkCV[myLine]->Wait(passportClerkLock[myLine]);//Idk if this is needed...
+			passportClerkLock[myLine]->Release();
+		}
+
+	}
+
 
 
 	//Here are the output Guidelines for the PassportClerk
 	if(false){
-	int identifier = -1;
-	printf("PassportClerk %i has signalled a Customer to come to their counter.\n", myLine);
-	printf("PassportClerk %i has received SSN %i from Customer %i.\n", myLine, identifier, identifier);
-	printf("PassportClerk %i has determined that Customer %i does not have both their application and picture completed.\n", myLine, identifier);
-	printf("PassportClerk %i has determined that Customer %i has both their application and picture completed.\n", myLine, identifier);
-	printf("PassportClerk %i has recorded Customer %i passport documentation.\n", myLine, identifier);
 	printf("PassportClerk %i is going on break.\n", myLine);
 	printf("PassportClerk %i is coming off break.\n", myLine);
 	}

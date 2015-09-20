@@ -512,6 +512,7 @@ void PictureClerk(int id){
 					printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, identifier);
 					//Signal Customer that I'm Done and show them the picture.
 					pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+					pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 					first = false;
 				}
 				printf("PictureClerk %i has has been told that Customer %i does like their picture.\n", myLine, identifier);

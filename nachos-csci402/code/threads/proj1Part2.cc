@@ -20,7 +20,7 @@ enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
 //Initialize Locks, CVS, and Monitors?
 //Locks
 Lock *clerkLineLock = new Lock("clerkLineLock");		//The clerkLineLock //for testing
-Lock *applicationClerkLineLock = new Lock('applicationClerkLineLock');	//The applicationClerkLineLock
+Lock *applicationClerkLineLock = new Lock("applicationClerkLineLock");	//The applicationClerkLineLock
 std::vector<Lock*> clerkLock;	//for testing//shouldberemoved
 std::vector<Lock*> applicationClerkLock;
 //CVS
@@ -114,15 +114,12 @@ void Customer(int id){
 
 	//Here are the output Guidelines for the Customer
 	if(false){
-	printf("Customer %i has gotten in regular line for ApplicationClerk %i.\n", SSN, myLine);
 	printf("Customer %i has gotten in regular line for PictureClerk %i.\n", SSN, myLine);
 	printf("Customer %i has gotten in regular line for PassportClerk %i.\n", SSN, myLine);
 	printf("Customer %i has gotten in regular line for Cashier %i.\n", SSN, myLine);
-	printf("Customer %i has gotten in bribe line for ApplicationClerk %i.\n", SSN, myLine);
 	printf("Customer %i has gotten in bribe line for PictureClerk %i.\n", SSN, myLine);
 	printf("Customer %i has gotten in bribe line for PassportClerk %i.\n", SSN, myLine);
 	printf("Customer %i has gotten in bribe line for Cashier %i.\n", SSN, myLine);
-	printf("Customer %i has given SSN %i to ApplicationClerk %i.\n", SSN, SSN, myLine);
 	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
 	printf("Customer %i has given SSN %i to PassportClerk %i.\n", SSN, SSN, myLine);
 	printf("Customer %i has given SSN %i to Cashier %i.\n", SSN, SSN, myLine);
@@ -137,11 +134,12 @@ void Customer(int id){
 
 }//End Customer
 
-//TODO FIX THIS!!!!! JUST STARTED!!!!!!!!!!!
+//TODO: FIX THIS!!!!! JUST STARTED!!!!!!!!!!!
 //The Customer's Interaction with the applicationClerk
+//    Get their application accepted by the ApplicationClerk
 void customerApplicationClerkInteraction(int SSN){
 	int myLine = -1;
-	bool bribe = false;
+	bool bribe = false;	//TODO: should init this somehow
 	//I have decided to go to the applicationClerk
 
 	//I should acquire the line lock
@@ -156,22 +154,37 @@ void customerApplicationClerkInteraction(int SSN){
 	}else{ //get in bribe line
 		myLine = pickShortestLine(applicationClerkBribeLineCount, applicationClerkState);
 	}
-
+	
+	//I must wait in line
 	if(applicationClerkState[myLine] == BUSY){
-		//I must wait in line
-		applicationClerkLineCount[myLine]++;
-		applicationClerkLineCV[myLine]->Wait(applicationClerkLineLock);
-		applicationClerkLineCount[myLine]--;
+		if(!bribe){
+			applicationClerkLineCount[myLine]++;
+			printf("Customer %i has gotten in regular line for ApplicationClerk %i.\n", SSN, myLine);
+			applicationClerkLineCV[myLine]->Wait(applicationClerkLineLock);
+			applicationClerkLineCount[myLine]--;
+		}else{
+			applicationClerkBribeLineCount[myLine]++;
+			printf("Customer %i has gotten in bribe line for ApplicationClerk %i.\n", SSN, myLine);
+			applicationClerkBribeLineCV[myLine]->Wait(applicationClerkLineLock);
+			applicationClerkBribeLineCount[myLine]--;
+		}
 	}
 	//Clerk is AVAILABLE
 	applicationClerkState[myLine] = BUSY;
-	clerkLineLock->Release();
+	applicationClerkLineLock->Release();
 
-	//For now just return
-	clerkLock[myLine]->Acquire();
-	clerkCV[myLine]->Signal(clerkLock[myLine]);
-	clerkLock[myLine]->Release();
-	printf("Customer %i: Done Returning.\n", SSN);
+	//Lets talk to clerk
+	applicationClerkLock[myLine]->Acquire();
+	//Give my data to my clerk
+	//TODO: How do we do that exactly??
+	printf("Customer %i has given SSN %i to ApplicationClerk %i.\n", SSN, SSN, myLine);
+	applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
+	//Wait for clerk to do their job
+	applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);
+	//Done
+	
+	applicationClerkLock[myLine]->Release();
+	//Done Return
 	return;
 }//End customerApplicationClerkInteraction
 
@@ -234,7 +247,48 @@ void Senator(int id){
 void ApplicationClerk(int id){
 	int myLine = id;
 
+	//Keep running
+	while(true){
 
+		applicationClerkLineLock->Acquire();
+		//printf("Clerk %i: LineLock acquired.\n", myLine);
+
+		if(applicationClerkBribeLineCount[myLine] > 0){
+			
+			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
+			applicationClerkState[myLine] = BUSY;
+		}else if(applicationClerkLineCount[myLine] > 0){
+			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
+			applicationClerkState[myLine] = BUSY;
+		}else{
+			//eventually go on break //for now //?
+			applicationClerkState[myLine] = AVAILABLE;
+		}
+		//For now release lock and continue...?
+		//remove this after testing.
+		if(applicationClerkState[myLine] == BUSY){
+			clerkLock[myLine]->Acquire();
+			applicationClerkLineLock->Release();
+			clerkCV[myLine]->Wait(clerkLock[myLine]);
+			clerkLock[myLine]->Release();
+			continue;
+		}else{
+			currentThread->Yield();
+		}
+
+		/*//Should only do this when we are BUSY?
+		if(clerkState[myLine] == BUSY){
+			clerkLock[myLine]->Acquire();
+			applicationClerkLineLock->Release();
+			//wait for customer data
+			clerkCV[myLine]->Wait(clerkLock[myLine]);
+			//Do my job - customer waiting
+			clerkCV[myLine]->Signal(clerkLock[myLine]);
+			clerkCV[myLine]->Wait(clerkLock[myLine]);
+			clerkLock[myLine]->Release();
+		}*/
+
+	}
 
 	//Here are the output Guidelines for the ApplicationClerk
 	if(false){

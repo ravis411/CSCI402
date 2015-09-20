@@ -7,11 +7,15 @@
 #include "synch.h"
 #include "list.h"
 #include "vector"
+#include <stdlib.h> 
 
 //Settings Variables 
 //TODO:These should be more dynamic
 int CLERKCOUNT = 1;		//The number of clerks
 int CUSTOMERCOUNT = 3; 	//Number of customers
+
+std::vector<bool> completedApplications(CUSTOMERCOUNT, 0);
+std::vector<bool> completedPicture(CUSTOMERCOUNT, 0);
 
 //Globals or constants
 enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
@@ -100,14 +104,22 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 	// HOWEVER, they do not move in front of any Customer that has also paid. 
 	// Customer money is to be deterined randomly, in increments of $100, $600, $1100, and $1600.
 void customerApplicationClerkInteraction(int SSN);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
+void customerPictureClerkInteraction(int SSN);
+
 void Customer(int id){
 	int SSN = id;
 	int myLine = -1;
-
+	int money = (rand()%4)*500 + 100;
 
 	//Should I go to the applicationClerk first or get my picture taken first?
-	if(true){
-		//Go to application clerk
+	if(rand() % 2){
+		//Go to application clerk first
+		customerApplicationClerkInteraction(SSN);
+		customerPictureClerkInteraction(SSN);
+	}
+	else {
+		//Go to the picture clerk first
+		customerPictureClerkInteraction(SSN);
 		customerApplicationClerkInteraction(SSN);
 	}
 
@@ -139,7 +151,7 @@ void Customer(int id){
 //    Get their application accepted by the ApplicationClerk
 void customerApplicationClerkInteraction(int SSN){
 	int myLine = -1;
-	bool bribe = false;	//TODO: should init this somehow
+	bool bribe = (money > 500) && (rand()%2);
 	//I have decided to go to the applicationClerk
 
 	//I should acquire the line lock
@@ -188,6 +200,67 @@ void customerApplicationClerkInteraction(int SSN){
 	return;
 }//End customerApplicationClerkInteraction
 
+
+//The Customer's Interaction with the pictureClerk
+//Get their picture accepted by the pictureClerk
+void customerPictureClerkInteraction(int SSN){
+	int myLine = -1;
+	bool bribe = (money > 500) && (rand()%2);
+
+	//I should acquire the line lock
+	pictureClerkLineLock->Acquire();
+	//lock acquired
+
+	//Can I go to counter, or have to wait? Should i bribe?
+	//Pick shortest line with clerk not on break
+	//Should i get in the regular line else i should bribe?
+	if(!bribe){ //Get in regular line
+		myLine = pickShortestLine(pictureClerkLineCount, pictureClerkState);
+	}else{ //get in bribe line
+		myLine = pickShortestLine(pictureClerkBribeLineCount, pictureClerkState);
+	}
+	
+	//I must wait in line
+	if(pictureClerkState[myLine] == BUSY){
+		if(!bribe){
+			pictureClerkLineCount[myLine]++;
+			printf("Customer %i has gotten in regular line for PictureClerk %i.\n", SSN, myLine);
+			pictureClerkLineCV[myLine]->Wait(pictureClerkLineLock);
+			pictureClerkLineCount[myLine]--;
+		}else{
+			pictureClerkBribeLineCount[myLine]++;
+			printf("Customer %i has gotten in bribe line for PictureClerk %i.\n", SSN, myLine);
+			pictureClerkBribeLineCV[myLine]->Wait(pictureClerkLineLock);
+			pictureClerkBribeLineCount[myLine]--;
+		}
+	}
+	//Clerk is AVAILABLE
+	pictureClerkState[myLine] = BUSY;
+	pictureClerkLineLock->Release();
+
+	//Lets talk to clerk
+	pictureClerkLock[myLine]->Acquire();
+	//Give my data to my clerk
+	//TODO: How do we do that exactly??
+	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
+	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+	//Wait for clerk to do their job
+	pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
+	// TODO: if rejected how to keep trying???
+	if(rand()%10 > 7) {
+		printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
+	}
+	else {
+		printf("Customer %i does like their picture from PictureClerk %i.\n", SSN, myLine);
+	}
+	
+
+	//Done
+	
+	pictureClerkLock[myLine]->Release();
+	//Done Return
+	return;
+}//End customerPictureClerkInteraction
 
 
 

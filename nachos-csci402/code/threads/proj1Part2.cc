@@ -23,8 +23,10 @@ enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
 //Locks
 Lock *applicationClerkLineLock = new Lock("applicationClerkLineLock");	//The applicationClerkLineLock
 Lock *pictureClerkLineLock = new Lock("pictureClerkLineLock");	//The applicationClerkLineLock
+Lock *passportClerkLineLock = new Lock("passportClerkLineLock");
 std::vector<Lock*> applicationClerkLock;
 std::vector<Lock*> pictureClerkLock;
+std::vector<Lock*> passportClerkLock;
 //CVS
 std::vector<Condition*> applicationClerkLineCV;
 std::vector<Condition*> applicationClerkBribeLineCV;	//applicationClerk CVs
@@ -34,6 +36,14 @@ Condition *applicationClerkBreakCV = new Condition("applicationClerkBreakCV");//
 std::vector<Condition*> pictureClerkLineCV;
 std::vector<Condition*> pictureClerkBribeLineCV;	//pictureClerk CVs
 std::vector<Condition*> pictureClerkCV;
+Condition *pictureClerkBreakCV = new Condition("pictureClerkBreakCV");//To keep track of clerks on break
+
+std::vector<Condition*> passportClerkLineCV;
+std::vector<Condition*> passportClerkBribeLineCV;	//passportClerk CVs
+std::vector<Condition*> passportClerkCV;
+Condition *passportClerkBreakCV = new Condition("passportClerkBreakCV");//To keep track of clerks on break
+
+
 //States
 std::vector<CLERKSTATE> applicationClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
 std::vector<CLERKSTATE> pictureClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
@@ -108,8 +118,9 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 	// Customer who can pay move in front of any Customer that has not paid. 
 	// HOWEVER, they do not move in front of any Customer that has also paid. 
 	// Customer money is to be deterined randomly, in increments of $100, $600, $1100, and $1600.
-void customerApplicationClerkInteraction(int SSN);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
-void customerPictureClerkInteraction(int SSN);
+void customerApplicationClerkInteraction(int SSN, int money);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
+void customerPictureClerkInteraction(int SSN, int money);
+void customerPassportClerkInteraction(int SSN, int money);
 
 void Customer(int id){
 	int SSN = id;
@@ -119,16 +130,16 @@ void Customer(int id){
 	//Should I go to the applicationClerk first or get my picture taken first?
 	if(rand() % 2){
 		//Go to application clerk first
-		customerApplicationClerkInteraction(SSN);
-		customerPictureClerkInteraction(SSN);
+		customerApplicationClerkInteraction(SSN, money);
+		customerPictureClerkInteraction(SSN, money);
 	}
 	else {
 		//Go to the picture clerk first
-		customerPictureClerkInteraction(SSN);
-		customerApplicationClerkInteraction(SSN);
+		customerPictureClerkInteraction(SSN, money);
+		customerApplicationClerkInteraction(SSN, money);
 	}
 
-	customerPassportClerkInteraction(SSN);
+	customerPassportClerkInteraction(SSN, money);
 
 	//Here are the output Guidelines for the Customer
 	if(false){
@@ -155,7 +166,7 @@ void Customer(int id){
 
 //The Customer's Interaction with the applicationClerk
 //    Get their application accepted by the ApplicationClerk
-void customerApplicationClerkInteraction(int SSN){
+void customerApplicationClerkInteraction(int SSN, int money){
 	int myLine = -1;
 	bool bribe = (money > 500) && (rand()%2);
 	//I have decided to go to the applicationClerk
@@ -210,7 +221,7 @@ void customerApplicationClerkInteraction(int SSN){
 
 //The Customer's Interaction with the pictureClerk
 //Get their picture accepted by the pictureClerk
-void customerPictureClerkInteraction(int SSN){
+void customerPictureClerkInteraction(int SSN, int money){
 	int myLine = -1;
 	bool bribe = (money > 500) && (rand()%2);
 
@@ -250,7 +261,7 @@ void customerPictureClerkInteraction(int SSN){
 	pictureClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
 	//We already have a lock so put my SSN in pictureClerkSharedData
-	pictureClerkSharedData[myLine] = SSN;
+	pictureClerkSharedDataSSN[myLine] = SSN;
 	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
 	
 	while(pictureClerkSharedDataPicture[myLine] == 0) {
@@ -275,7 +286,7 @@ void customerPictureClerkInteraction(int SSN){
 	return;
 }//End customerPictureClerkInteraction
 
-void customerPassportClerkInteraction(int SSN){
+void customerPassportClerkInteraction(int SSN, int money){
 	int myLine = -1;
 	bool bribe = (money > 500) && (rand()%2);
 
@@ -315,15 +326,15 @@ void customerPassportClerkInteraction(int SSN){
 	passportClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
 	//We already have a lock so put my SSN in passportClerkSharedData
-	passportClerkSharedData[myLine] = SSN;
+	passportClerkSharedDataSSN[myLine] = SSN;
 	printf("Customer %i has given SSN %i to PassportClerk %i.\n", SSN, SSN, myLine);
 	passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
 	//Wait for clerk to do their job
-	passportClerkCV[myLine]->Wait(passportClerkLock[myLine];
+	passportClerkCV[myLine]->Wait(passportClerkLock[myLine]);
 	while(passportPunishment[SSN] > 0) {
 		for(int i = 0; i < rand()%901 + 100; i++ ) { currentThread->Yield(); }
 		passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
-		passportClerkCV[myLine]->Wait(passportClerkLock[myLine];
+		passportClerkCV[myLine]->Wait(passportClerkLock[myLine]);
 	}
 	
 	//Done
@@ -391,7 +402,7 @@ void Senator(int id){
 void ApplicationClerk(int id){
 	int myLine = id;
 	int money = 0;
-	
+	int identifier = -1; //TODO: FOR DEBUGGING SHOULD BE REMOVED!!
 //Keep running
 	while(true){
 
@@ -466,7 +477,7 @@ void ApplicationClerk(int id){
 void PictureClerk(int id){
 		int myLine = id;
 		int money = 0;
-
+		int identifier = -1; //TODO: REMOVE THIS!!!
 		//Keep running
 		while(true){
 	
@@ -486,7 +497,7 @@ void PictureClerk(int id){
 			}
 
 			//Should only do this when we are BUSY? We have a customer...
-			if(clerkState[myLine] == BUSY){
+			if(pictureClerkState[myLine] == BUSY){
 				printf("PictureClerk %i has signalled a Customer to come to their counter.\n", myLine);
 				pictureClerkLock[myLine]->Acquire();
 				pictureClerkLineLock->Release();
@@ -494,7 +505,7 @@ void PictureClerk(int id){
 				pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 				//Customer Has given me their SSN?
 				//And I have a lock
-				int customerSSN = pictureClerkSharedData[myLine];
+				int customerSSN = pictureClerkSharedDataSSN[myLine];
 				printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
 				bool first = true;
 				while(pictureClerkSharedDataPicture[myLine] == 0) {
@@ -542,7 +553,7 @@ void PictureClerk(int id){
 void PassportClerk(int id){
 	int myLine = id;
 	int money = 0;
-	
+	int identifier = -1; //TODO: REMOVE THIS SORRY FOR ADDING THESE
 	//Keep running
 	while(true){
 
@@ -562,7 +573,7 @@ void PassportClerk(int id){
 		}
 
 		//Should only do this when we are BUSY? We have a customer...
-		if(clerkState[myLine] == BUSY){
+		if(passportClerkState[myLine] == BUSY){
 			printf("PassportClerk %i has signalled a Customer to come to their counter.\n", myLine);
 			passportClerkLock[myLine]->Acquire();
 			passportClerkLineLock->Release();
@@ -659,7 +670,7 @@ void Cashier(int id){
 // Managers are also responsible for keeping track of how much money the office has made.
 	// You are to print the total received from each clerk type, and a total from all clerks.
 	// This is to be printed on a fairly regular basis.
-
+void managerCheckandWakupClerks();//Forward declaration..?
 void Manager(int id){
 
 	//Untill End of Simulation
@@ -668,7 +679,7 @@ void Manager(int id){
 
 		//Check Lines Wake up Clerk if More than 3 in a line.
 		//Check ApplicationClerk
-		
+		managerCheckandWakupClerks();
 		
 
 
@@ -695,6 +706,22 @@ void Manager(int id){
 
 //Utilities for Manager
 
+// managerCheckandWakeupCLERK
+// checks if a line has more than 3 customers... 
+// if so, signals a clerk on break
+void managerCheckandWakeupCLERK(Lock* managerCWCLineLock, std::vector<int>& managerCWClineCount, Condition* managerCWCBreakCV, int managerCWCount){
+	managerCWCLineLock->Acquire();
+	for(int i = 0; i < managerCWCount; i++){
+			if(managerCWClineCount[i] > 3){
+				//Wake up a clerk if there is one
+				managerCWCBreakCV->Signal(managerCWCLineLock);
+				break;//We don't need to check anymore.
+			}
+		}
+	managerCWCLineLock->Release();
+}
+
+
 //managerCheckandWakupClerks()
 //Checks all types of clerks for lines longer than 3 and wakes up a sleaping clerk if there is one
 void managerCheckandWakupClerks(){
@@ -703,22 +730,6 @@ void managerCheckandWakupClerks(){
 
 	//TODO CHECK OTHER CLERKS!
 }
-
-// managerCheckandWakeupCLERK
-// checks if a line has more than 3 customers... 
-// if so, signals a clerk on break
-void managerCheckandWakeupCLERK(Lock* managerCWCLineLock, std::vector<int>& managerCWClineCount, std::vector<Thread*>& managerCWCBreakCV, int managerCWCount){
-	managerCWCLineLock->Acquire();
-	for(int i = 0; i < managerCWCount; i++){
-			if(managerCWClineCount[i] > 3){
-				//Wake up a clerk if there is one
-				managerCWClerkBreakCV->Signal(managerCWCLineLock);
-				break;//We don't need to check anymore.
-			}
-		}
-	managerCWCLineLock->Release();
-}
-
 
 //End Manager functions
 ///////////////////////////////

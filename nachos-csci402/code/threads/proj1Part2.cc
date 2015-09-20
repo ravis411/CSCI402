@@ -419,7 +419,10 @@ void ApplicationClerk(int id){
 			applicationClerkState[myLine] = BUSY;
 		}else{
 			//eventually go on break //for now //?
+			applicationClerkState[myLine] = ONBREAK;
+			printf("ApplicationClerk %i is going on break.\n", myLine);
 			applicationClerkBreakCV->Wait(applicationClerkLineLock);
+			printf("ApplicationClerk %i is coming off break.\n", myLine);
 			applicationClerkState[myLine] = AVAILABLE;
 		}
 
@@ -448,12 +451,6 @@ void ApplicationClerk(int id){
 
 	}
 
-	//Here are the output Guidelines for the ApplicationClerk
-	if(false){
-
-	printf("ApplicationClerk %i is going on break.\n", myLine);
-	printf("ApplicationClerk %i is coming off break.\n", myLine);
-	}
 }//End ApplicationClerk
 
 
@@ -691,7 +688,6 @@ void Manager(int id){
 	//Here are the output Guidelines for the Manager
 	if(false){
 	int identifier = -1;
-	printf("Manager has woken up an ApplicationClerk.\n");
 	printf("Manager has woken up an PictureClerk.\n");
 	printf("Manager has woken up an PassportClerk.\n");
 	printf("Manager has woken up an Cashier.\n");
@@ -709,16 +705,20 @@ void Manager(int id){
 // managerCheckandWakeupCLERK
 // checks if a line has more than 3 customers... 
 // if so, signals a clerk on break
-void managerCheckandWakeupCLERK(Lock* managerCWCLineLock, std::vector<int>& managerCWClineCount, Condition* managerCWCBreakCV, int managerCWCount){
+// Returns true if there was asleeping clerk and needed to wake one up
+bool managerCheckandWakeupCLERK(Lock* managerCWCLineLock, std::vector<int>& managerCWClineCount, std::vector<CLERKSTATE>& managerCWCState, Condition* managerCWCBreakCV, int managerCWCount){
+	bool wakeUp = false;//should we wake up a clerk?
+	bool asleep = false;//is any clerk asleep?
 	managerCWCLineLock->Acquire();
 	for(int i = 0; i < managerCWCount; i++){
-			if(managerCWClineCount[i] > 3){
-				//Wake up a clerk if there is one
-				managerCWCBreakCV->Signal(managerCWCLineLock);
-				break;//We don't need to check anymore.
-			}
-		}
+		if(managerCWCState[i] == ONBREAK)
+			asleep = true;
+		if(managerCWClineCount[i] > 3)
+			wakeUp = true;
+	}
+	managerCWCBreakCV->Signal(managerCWCLineLock);
 	managerCWCLineLock->Release();
+	return asleep && wakeUp;
 }
 
 
@@ -726,7 +726,9 @@ void managerCheckandWakeupCLERK(Lock* managerCWCLineLock, std::vector<int>& mana
 //Checks all types of clerks for lines longer than 3 and wakes up a sleaping clerk if there is one
 void managerCheckandWakupClerks(){
 	//Check Application Clerks
-	managerCheckandWakeupCLERK(applicationClerkLineLock, applicationClerkLineCount, applicationClerkBreakCV, CLERKCOUNT);
+	if(managerCheckandWakeupCLERK(applicationClerkLineLock, applicationClerkLineCount, applicationClerkState, applicationClerkBreakCV, CLERKCOUNT)){
+		printf("Manager has woken up an ApplicationClerk.\n");
+	}
 
 	//TODO CHECK OTHER CLERKS!
 }

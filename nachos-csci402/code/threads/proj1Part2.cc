@@ -456,7 +456,7 @@ void ApplicationClerk(int id){
 
 //Utility for applicationClerk to gon on brak
 // Assumptions: called with clerkLineLock
-applicationClerkcheckAndGoOnBreak(int myLine){
+void applicationClerkcheckAndGoOnBreak(int myLine){
 	//Only go on break if there is at least one other clerk
 	bool freeOrAvailable = false;
 	for(int i = 0; i < CLERKCOUNT; i++){
@@ -492,6 +492,7 @@ applicationClerkcheckAndGoOnBreak(int myLine){
 // PictureClerks go on break if they have no Customers in their line.
 // There is always a delay in an accepted picture being "filed". 
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
+void pictureClerkcheckAndGoOnBreak(int myLine);
 void PictureClerk(int id){
 		int myLine = id;
 		int money = 0;
@@ -510,8 +511,8 @@ void PictureClerk(int id){
 				pictureClerkLineCV[myLine]->Signal(pictureClerkLineLock);
 				pictureClerkState[myLine] = BUSY;
 			}else{
-				//eventually go on break //for now //?
-				pictureClerkState[myLine] = AVAILABLE;
+				//Go on a break!
+				pictureClerkcheckAndGoOnBreak(myLine);
 			}
 
 			//Should only do this when we are BUSY? We have a customer...
@@ -546,15 +547,32 @@ void PictureClerk(int id){
 			}
 	
 		}
-	
-
-	//Here are the output Guidelines for the PictureClerk
-	if(false){
-
-	printf("PictureClerk %i is going on break.\n", myLine);
-	printf("PictureClerk %i is coming off break.\n", myLine);
-	}
+		
 }//End PictureClerk
+
+//Utility for pictureClerk to go on brak
+// Assumptions: called with clerkLineLock
+void pictureClerkcheckAndGoOnBreak(int myLine){
+	//Only go on break if there is at least one other clerk
+	bool freeOrAvailable = false;
+	for(int i = 0; i < CLERKCOUNT; i++){
+		if(i != myLine && ( pictureClerkState[i] == AVAILABLE || pictureClerkState[i] == BUSY ) ){
+			freeOrAvailable = true;
+			break;
+		}
+	}
+	//There is at least one clerk...go on a break.
+	if(freeOrAvailable){
+		pictureClerkState[myLine] = ONBREAK;
+		printf("PictureClerk %i is going on break.\n", myLine);
+		pictureClerkBreakCV->Wait(pictureClerkLineLock);
+		printf("PictureClerk %i is coming off break.\n", myLine);
+	}
+	pictureClerkState[myLine] = AVAILABLE;
+}
+
+
+
 
 
 

@@ -563,12 +563,17 @@ void ClerkTest(int whatLine){
 //This runs the simulation
 void Part2TestSuit(){
 
-	//Initialize Variables
+	//Initialize dynamic variables
 	for(int i = 0; i < CLERKCOUNT; i++){
 		clerkLineCV.push_back(new Condition("clerkLineCV" + i));
 		clerkBribeLineCV.push_back(new Condition("clerkLineCV" + i));
 		clerkLock.push_back(new Lock("clerkLock" + i));
 		clerkCV.push_back(new Condition("clerkCV" + i));
+
+		applicationClerkLock.push_back(new Lock("applicationClerkLock" + i));
+		applicationClerkLineCV.push_back(new Condition("applicationClerkLineCV" + i));
+		applicationClerkBribeLineCV.push_back(new Condition("applicationClerkBribeLineCV" + i));
+		applicationClerkCV.push_back(new Condition("applicationClerkCV" + i));
 	}
 
 
@@ -576,14 +581,14 @@ void Part2TestSuit(){
 	
 	Thread *t;
 	t = new Thread("Customer 0");
-	t->Fork(CustomerTest, 0);
+	t->Fork(Customer, 0);
 	t = new Thread("Customer 1");
-	t->Fork(CustomerTest, 1);
+	t->Fork(Customer, 1);
 	t = new Thread("Customer 2");
-	t->Fork(CustomerTest, 2);
+	t->Fork(Customer, 2);
 
 	t = new Thread("Clerk 0");
-	t->Fork(ClerkTest, 0);
+	t->Fork(ApplicationClerk, 0);
 
 }
 

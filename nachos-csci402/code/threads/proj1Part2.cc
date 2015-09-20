@@ -29,6 +29,7 @@ std::vector<Lock*> pictureClerkLock;
 std::vector<Condition*> applicationClerkLineCV;
 std::vector<Condition*> applicationClerkBribeLineCV;	//applicationClerk CVs
 std::vector<Condition*> applicationClerkCV;
+Condition *applicationClerkBreakCV = new Condition("applicationClerkBreakCV");//To keep track of clerks on break
 
 std::vector<Condition*> pictureClerkLineCV;
 std::vector<Condition*> pictureClerkBribeLineCV;	//pictureClerk CVs
@@ -339,6 +340,7 @@ void ApplicationClerk(int id){
 			applicationClerkState[myLine] = BUSY;
 		}else{
 			//eventually go on break //for now //?
+			applicationClerkBreakCV->Wait(applicationClerkLineLock);
 			applicationClerkState[myLine] = AVAILABLE;
 		}
 
@@ -534,8 +536,6 @@ void Cashier(int id){
 
 
 
-
-
 // Managers tell the various Clerks when to start working, when lines get too long. 
 //
 // Clerks go on break when they have no one in their line.
@@ -543,11 +543,25 @@ void Cashier(int id){
 // Managers are also responsible for keeping track of how much money the office has made.
 	// You are to print the total received from each clerk type, and a total from all clerks.
 	// This is to be printed on a fairly regular basis.
+
 void Manager(int id){
 
+	//Untill End of Simulation
+	while(true){
 
 
-	//Here are the output Guidelines for the Cashier
+		//Check Lines Wake up Clerk if More than 3 in a line.
+		//Check ApplicationClerk
+		
+		
+
+
+
+	}
+
+
+
+	//Here are the output Guidelines for the Manager
 	if(false){
 	int identifier = -1;
 	printf("Manager has woken up an ApplicationClerk.\n");
@@ -562,6 +576,36 @@ void Manager(int id){
 	}
 
 }//End Manager
+
+//Utilities for Manager
+
+//managerCheckandWakupClerks()
+//Checks all types of clerks for lines longer than 3 and wakes up a sleaping clerk if there is one
+void managerCheckandWakupClerks(){
+	//Check Application Clerks
+	managerCheckandWakeupCLERK(applicationClerkLineLock, applicationClerkLineCount, applicationClerkBreakCV, CLERKCOUNT);
+
+	//TODO CHECK OTHER CLERKS!
+}
+
+// managerCheckandWakeupCLERK
+// checks if a line has more than 3 customers... 
+// if so, signals a clerk on break
+void managerCheckandWakeupCLERK(Lock* managerCWCLineLock, std::vector<int>& managerCWClineCount, std::vector<Thread*>& managerCWCBreakCV, int managerCWCount){
+	managerCWCLineLock->Acquire();
+	for(int i = 0; i < managerCWCount; i++){
+			if(managerCWClineCount[i] > 3){
+				//Wake up a clerk if there is one
+				managerCWClerkBreakCV->Signal(managerCWCLineLock);
+				break;//We don't need to check anymore.
+			}
+		}
+	managerCWCLineLock->Release();
+}
+
+
+//End Manager functions
+///////////////////////////////
 
 
 

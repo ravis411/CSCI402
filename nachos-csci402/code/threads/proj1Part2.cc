@@ -134,7 +134,7 @@ void Customer(int id){
 	int money = (rand()%4)*500 + 100;
 
 	//Should I go to the applicationClerk first or get my picture taken first?
-	if(false && rand() % 2){
+	if(rand() % 2){
 		//Go to application clerk first
 		customerApplicationClerkInteraction(SSN, money);
 		customerPictureClerkInteraction(SSN, money);
@@ -144,6 +144,9 @@ void Customer(int id){
 		customerPictureClerkInteraction(SSN, money);
 		customerApplicationClerkInteraction(SSN, money);
 	}
+
+	return;
+
 	while(passportCompletion[SSN] == 0) {
 		customerPassportClerkInteraction(SSN, money);
 	}
@@ -288,7 +291,7 @@ void customerPictureClerkInteraction(int SSN, int money){
 		//Wait for clerk to take the picture
 		pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 	}
-	
+	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 	pictureClerkLock[myLine]->Release();
 	//Done Return
 	return;
@@ -553,6 +556,7 @@ void PictureClerk(int id){
 				pictureCompletion[customerSSN] = 1;
 				//Signal Customer that I'm Done.
 				pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+				pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 				//pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);//Idk if this is needed...
 				pictureClerkLock[myLine]->Release();
 			}
@@ -883,7 +887,7 @@ void Part2TestSuit(){
 	
 	for(int i = 0; i < CLERKCOUNT; i++){
 		t = new Thread("ApplicationClerk " + i);
-		//t->Fork(ApplicationClerk, i);
+		t->Fork(ApplicationClerk, i);
 
 		t = new Thread("PictureClerk " + i);
 		t->Fork(PictureClerk, i);

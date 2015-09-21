@@ -72,8 +72,8 @@ std::vector<int> applicationClerkSharedData(CLERKCOUNT, 0);	//This can be used b
 std::vector<int> pictureClerkSharedDataSSN(CLERKCOUNT,0); //This can be used by the customer to pass SSN
 std::vector<int> pictureClerkSharedDataPicture(CLERKCOUNT,0); // This can be used by the customer to pass acceptance of the picture
 std::vector<int> passportClerkSharedDataSSN(CLERKCOUNT, 0); //This can be used by the customer to pass SSN
-std::vector<bool> applicationCompletion(CUSTOMERCOUNT, 1); //Used by passportCerkto verify that application has been completed
-std::vector<bool> pictureCompletion(CUSTOMERCOUNT, 1); //Used by passportClerk to verify that picture has beeen completed 
+std::vector<bool> applicationCompletion(CUSTOMERCOUNT, 0); //Used by passportCerkto verify that application has been completed
+std::vector<bool> pictureCompletion(CUSTOMERCOUNT, 0); //Used by passportClerk to verify that picture has beeen completed 
 std::vector<bool> passportCompletion(CUSTOMERCOUNT,0); // Used by cashier to verify that the passport is complete
 std::vector<int> passportPunishment(CUSTOMERCOUNT, 0); //Used by passportClerk to punish bad people.
 std::vector<int> cashierSharedDataSSN(CLERKCOUNT, 0); //This can be used by the customer to pass SSN
@@ -983,11 +983,11 @@ void Part2TestSuit(){
 	}
 	
 	for(int i = 0; i < CLERKCOUNT; i++){
-		//t = new Thread("ApplicationClerk " + i);
-		//t->Fork(ApplicationClerk, i);
+		t = new Thread("ApplicationClerk " + i);
+		t->Fork(ApplicationClerk, i);
 
-		//t = new Thread("PictureClerk " + i);
-		//t->Fork(PictureClerk, i);
+		t = new Thread("PictureClerk " + i);
+		t->Fork(PictureClerk, i);
 
 		t = new Thread("PassportClerk " + i);
 		t->Fork(PassportClerk, i);

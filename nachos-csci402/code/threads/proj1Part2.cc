@@ -43,6 +43,11 @@ std::vector<Condition*> passportClerkBribeLineCV;	//passportClerk CVs
 std::vector<Condition*> passportClerkCV;
 Condition *passportClerkBreakCV = new Condition("passportClerkBreakCV");//To keep track of clerks on break
 
+std::vector<Condition*> cashierLineCV;
+std::vector<Condition*> cashierBribeLineCV;	//passportClerk CVs
+std::vector<Condition*> cashierCV;
+Condition *cashierBreakCV = new Condition("cashierBreakCV");//To keep track of clerks on break
+
 
 //States
 std::vector<CLERKSTATE> applicationClerkState(CLERKCOUNT, BUSY);	//applicationClerkState
@@ -121,7 +126,7 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 void customerApplicationClerkInteraction(int SSN, int money);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
 void customerPictureClerkInteraction(int SSN, int money);
 void customerPassportClerkInteraction(int SSN, int money);
-void customerCashierClerkInteraction(int SSN, int money);
+void customerCashierInteraction(int SSN, int money);
 
 void Customer(int id){
 	int SSN = id;
@@ -132,13 +137,11 @@ void Customer(int id){
 	if(false && rand() % 2){
 		//Go to application clerk first
 		customerApplicationClerkInteraction(SSN, money);
-		return;
 		customerPictureClerkInteraction(SSN, money);
 	}
 	else {
 		//Go to the picture clerk first
 		customerPictureClerkInteraction(SSN, money);
-		return;
 		customerApplicationClerkInteraction(SSN, money);
 	}
 	while(passportCompletion[SSN] == 0) {
@@ -271,10 +274,8 @@ void customerPictureClerkInteraction(int SSN, int money){
 
 	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 	pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
+	//Wait for clerk to take the picture
 	while(pictureClerkSharedDataPicture[myLine] == 0) {
-	
-		//Wait for clerk to take the picture
-		
 		if(rand()%10 > 7) {
 			printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
 			pictureClerkSharedDataPicture[myLine] = 0;
@@ -287,10 +288,6 @@ void customerPictureClerkInteraction(int SSN, int money){
 		//Wait for clerk to take the picture
 		pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 	}
-	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
- 	//wait for clerk to finish job
-	pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
-	//Done
 	
 	pictureClerkLock[myLine]->Release();
 	//Done Return
@@ -537,17 +534,17 @@ void PictureClerk(int id){
 				//And I have a lock
 				int customerSSN = pictureClerkSharedDataSSN[myLine];
 				printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
-					pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
-					pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
-				bool first = true;
 				pictureClerkSharedDataPicture[myLine] = 0;
 				while(pictureClerkSharedDataPicture[myLine] == 0) {
-					if(!first) { 	printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, customerSSN); }
+					//Taking picture
 					printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, customerSSN);
 					//Signal Customer that I'm Done and show them the picture. Then wait for response.
 					pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 					pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
-					first = false;
+					if(pictureClerkSharedDataPicture[myLine] == 0)  {
+						printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, customerSSN);
+					}
+
 				}
 				printf("PictureClerk %i has has been told that Customer %i does like their picture.\n", myLine, customerSSN);
 				//Yield before submitting.

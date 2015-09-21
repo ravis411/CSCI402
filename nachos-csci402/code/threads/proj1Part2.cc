@@ -13,8 +13,8 @@
 //Settings Variables 
 //TODO:These should be more dynamic
 
-int CLERKCOUNT = 1;		//The number of clerks
-int CUSTOMERCOUNT = 2; 	//Number of customers
+int CLERKCOUNT = 2;		//The number of clerks
+int CUSTOMERCOUNT = 5; 	//Number of customers
 
 
 //Globals or constants
@@ -220,11 +220,13 @@ void customerApplicationClerkInteraction(int SSN, int &money){
 			applicationClerkBribeLineCount[myLine]--;
 		}
 	}
+printf("Hmm");
 	//Clerk is AVAILABLE
 	applicationClerkState[myLine] = BUSY;
 	applicationClerkLineLock->Release();
 	//Lets talk to clerk
 	applicationClerkLock[myLine]->Acquire();
+printf("Haqrd");
 	//Give my data to my clerk
 	//We already have a lock so put my SSN in applicationClerkSharedData
 	applicationClerkSharedData[myLine] = SSN;
@@ -508,7 +510,7 @@ void ApplicationClerk(int id){
 		}else{
 			//No Customers
 			//Go on break
-			//applicationClerkcheckAndGoOnBreak(myLine);
+			applicationClerkcheckAndGoOnBreak(myLine);
 		}
 
 		//Should only do this when we are BUSY? When we have a customer...
@@ -529,19 +531,17 @@ void ApplicationClerk(int id){
 			
 
 			printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
-
-			//Do my job - customer waiting - then yield before submitting
-
-			for(int i = 0; i < rand()%81 + 20; i++) { currentThread->Yield(); }
-			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, customerSSN);
-
-			//TODO: NEED TO ACQUIRE A LOCK FOR THIS!!
-
+				//TODO: NEED TO ACQUIRE A LOCK FOR THIS!!
+			//Do my job - customer waiting 
 			applicationCompletion[customerSSN] = 1;
 
 			//Signal Customer that I'm Done.
 			applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
-			//applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);//Idk if this is needed...
+			
+			//yield for filing time
+			for(int i = 0; i < rand()%81 + 20; i++) { currentThread->Yield(); }
+			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, customerSSN);
+			
 			applicationClerkLock[myLine]->Release();
 		}
 

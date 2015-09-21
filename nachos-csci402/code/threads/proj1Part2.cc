@@ -723,10 +723,8 @@ void Manager(int id){
 		//Check Lines Wake up Clerk if More than 3 in a line.
 		//Check ApplicationClerk
 		managerCheckandWakupClerks();
-		
 
-
-		currentThread->Yield();
+		currentThread->Yield();//Let someone else get the CPU
 	}
 
 
@@ -734,7 +732,6 @@ void Manager(int id){
 	//Here are the output Guidelines for the Manager
 	if(false){
 	int identifier = -1;
-	printf("Manager has woken up an PictureClerk.\n");
 	printf("Manager has woken up an PassportClerk.\n");
 	printf("Manager has woken up an Cashier.\n");
 	printf("Manager has counted a total of $%i for ApplicationClerks.\n", identifier);
@@ -774,6 +771,11 @@ void managerCheckandWakupClerks(){
 	//Check Application Clerks
 	if(managerCheckandWakeupCLERK(applicationClerkLineLock, applicationClerkLineCount, applicationClerkState, applicationClerkBreakCV, CLERKCOUNT)){
 		printf("Manager has woken up an ApplicationClerk.\n");
+	}
+
+	//Check Picture Clerks
+	if(managerCheckandWakeupCLERK(pictureClerkLineLock, pictureClerkLineCount, pictureClerkState, pictureClerkBreakCV, CLERKCOUNT)){
+		printf("Manager has woken up a PictureClerk.\n");
 	}
 
 	//TODO CHECK OTHER CLERKS!

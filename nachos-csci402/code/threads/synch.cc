@@ -202,7 +202,7 @@ void Condition::Wait(Lock* conditionLock) {
     queue->Append((void *)currentThread);
     waitingLock->Release();
     currentThread->Sleep();
-    waitingLock->Acquire();
+    conditionLock->Acquire();
     (void) interrupt->SetLevel(oldLevel);   // restore interrupts
 }//End Wait()
 
@@ -220,7 +220,7 @@ void Condition::Signal(Lock* conditionLock) {
     //Wakeup 1 waiting thread
      scheduler->ReadyToRun( (Thread *)queue->Remove() );
      if(queue->IsEmpty()){
-        waitingLock == NULL;
+        waitingLock = NULL;
      }
      (void) interrupt->SetLevel(oldLevel);   // restore interrupts
 }

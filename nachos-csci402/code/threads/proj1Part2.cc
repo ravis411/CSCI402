@@ -147,6 +147,9 @@ void Customer(int id){
 		customerPictureClerkInteraction(SSN, money);
 		customerApplicationClerkInteraction(SSN, money);
 	}
+
+	return;
+
 	while(passportCompletion[SSN] == 0) {
 		printf("Customer %i passporting?", SSN);
 		customerPassportClerkInteraction(SSN, money);
@@ -292,7 +295,7 @@ void customerPictureClerkInteraction(int SSN, int money){
 		//Wait for clerk to take the picture
 		pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 	}
-	
+	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 	pictureClerkLock[myLine]->Release();
 	//Done Return
 	return;
@@ -619,7 +622,8 @@ void PictureClerk(int id){
 				pictureCompletion[customerSSN] = 1;
 				//Signal Customer that I'm Done.
 				pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
-				//pictureClerkCV[myLine]->Wait(picturereClerkLock[myLine]);//Idk if this is needed...
+				pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
+
 				pictureClerkLock[myLine]->Release();
 			}
 	
@@ -857,10 +861,8 @@ void Manager(int id){
 		//Check Lines Wake up Clerk if More than 3 in a line.
 		//Check ApplicationClerk
 		managerCheckandWakupClerks();
-		
 
-
-		currentThread->Yield();
+		currentThread->Yield();//Let someone else get the CPU
 	}
 
 
@@ -868,7 +870,6 @@ void Manager(int id){
 	//Here are the output Guidelines for the Manager
 	if(false){
 	int identifier = -1;
-	printf("Manager has woken up an PictureClerk.\n");
 	printf("Manager has woken up an PassportClerk.\n");
 	printf("Manager has woken up an Cashier.\n");
 	printf("Manager has counted a total of $%i for ApplicationClerks.\n", identifier);
@@ -908,6 +909,11 @@ void managerCheckandWakupClerks(){
 	//Check Application Clerks
 	if(managerCheckandWakeupCLERK(applicationClerkLineLock, applicationClerkLineCount, applicationClerkState, applicationClerkBreakCV, CLERKCOUNT)){
 		printf("Manager has woken up an ApplicationClerk.\n");
+	}
+
+	//Check Picture Clerks
+	if(managerCheckandWakeupCLERK(pictureClerkLineLock, pictureClerkLineCount, pictureClerkState, pictureClerkBreakCV, CLERKCOUNT)){
+		printf("Manager has woken up a PictureClerk.\n");
 	}
 
 	//TODO CHECK OTHER CLERKS!

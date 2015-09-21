@@ -13,7 +13,7 @@
 //Settings Variables 
 //TODO:These should be more dynamic
 int CLERKCOUNT = 1;		//The number of clerks
-int CUSTOMERCOUNT = 3; 	//Number of customers
+int CUSTOMERCOUNT = 2; 	//Number of customers
 
 //Globals or constants
 enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
@@ -70,12 +70,13 @@ std::vector<int> applicationClerkSharedData(CLERKCOUNT, 0);	//This can be used b
 std::vector<int> pictureClerkSharedDataSSN(CLERKCOUNT,0); //This can be used by the customer to pass SSN
 std::vector<int> pictureClerkSharedDataPicture(CLERKCOUNT,0); // This can be used by the customer to pass acceptance of the picture
 std::vector<int> passportClerkSharedDataSSN(CLERKCOUNT, 0); //This can be used by the customer to pass SSN
-std::vector<bool> applicationCompletion(CUSTOMERCOUNT, 0); //Used by passportCerkto verify that application has been completed
-std::vector<bool> pictureCompletion(CUSTOMERCOUNT, 0); //Used by passportClerk to verify that picture has beeen completed 
+std::vector<bool> applicationCompletion(CUSTOMERCOUNT, 1); //Used by passportCerkto verify that application has been completed
+std::vector<bool> pictureCompletion(CUSTOMERCOUNT, 1); //Used by passportClerk to verify that picture has beeen completed 
 std::vector<bool> passportCompletion(CUSTOMERCOUNT,0); // Used by cashier to verify that the passport is complete
 std::vector<int> passportPunishment(CUSTOMERCOUNT, 0); //Used by passportClerk to punish bad people.
 std::vector<int> cashierSharedDataSSN(CLERKCOUNT, 0); //This can be used by the customer to pass SSN
 std::vector<int> cashierRejection(CUSTOMERCOUNT, 0); //Used by the cashier to reject customers.
+std::vector<int> doneCompletely(CUSTOMERCOUNT, 0); //Used by customer to tell when done.
 //
 //End variables
 /////////////////////////////////
@@ -151,9 +152,13 @@ void Customer(int id){
 	return;
 
 	while(passportCompletion[SSN] == 0) {
-		printf("Customer %i passporting?", SSN);
 		customerPassportClerkInteraction(SSN, money);
 	}
+	while(doneCompletely[SSN] == 0) {
+		customerCashierInteraction(SSN, money);
+	}
+
+
 return;
 	//Here are the output Guidelines for the Customer
 	if(false){
@@ -286,14 +291,18 @@ void customerPictureClerkInteraction(int SSN, int money){
 		if(rand()%10 > 7) {
 			printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
 			pictureClerkSharedDataPicture[myLine] = 0;
+			pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+			//Wait for clerk to take the picture
+			pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 		}
 		else {
 			printf("Customer %i does like their picture from PictureClerk %i.\n", SSN, myLine);
 			pictureClerkSharedDataPicture[myLine] = 1;
+			pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
+			//Wait for clerk to take the picture
+			pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
+			break;
 		}
-		pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
-		//Wait for clerk to take the picture
-		pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 	}
 	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 	pictureClerkLock[myLine]->Release();
@@ -342,13 +351,13 @@ void customerPassportClerkInteraction(int SSN, int money){
 	//Give my data to my clerk
 	//We already have a lock so put my SSN in passportClerkSharedData
 	passportClerkSharedDataSSN[myLine] = SSN;
-	pictureClerkSharedDataPicture[myLine] = 0;
 	printf("Customer %i has given SSN %i to PassportClerk %i.\n", SSN, SSN, myLine);
 	passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
 	//Wait for clerk to do their job
 	passportClerkCV[myLine]->Wait(passportClerkLock[myLine]);
 	if(passportPunishment[SSN] == 1) {
 		for(int i = 0; i < rand()%901 + 100; i++ ) { currentThread->Yield(); }
+		return;
 	}
 	passportPunishment[SSN] = 0;
 	//Done
@@ -705,10 +714,11 @@ void PassportClerk(int id){
 			printf("PassportClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
 			
 			//Do my job - customer waiting
-			if(applicationCompletion[customerSSN] == 0 && pictureCompletion[customerSSN] == 0) {
+			if(!(applicationCompletion[customerSSN] == 1 && pictureCompletion[customerSSN] == 1)) {
 				passportPunishment[customerSSN] = 1;
 				printf("PassportClerk %i has determined that Customer %i does not have both their application and picture completed.\n", myLine, identifier);
-
+				passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
+				passportClerkCV[myLine]->Wait(passportClerkLock[myLine]);
 			}
 			else {
 				passportPunishment[customerSSN] = 0;
@@ -960,14 +970,17 @@ void Part2TestSuit(){
 	}
 	
 	for(int i = 0; i < CLERKCOUNT; i++){
-		t = new Thread("ApplicationClerk " + i);
-		t->Fork(ApplicationClerk, i);
+		//t = new Thread("ApplicationClerk " + i);
+		//t->Fork(ApplicationClerk, i);
 
-		t = new Thread("PictureClerk " + i);
-		t->Fork(PictureClerk, i);
+		//t = new Thread("PictureClerk " + i);
+		//t->Fork(PictureClerk, i);
 
 		t = new Thread("PassportClerk " + i);
 		t->Fork(PassportClerk, i);
+
+		t = new Thread("Cashier " + i);
+		t->Fork(Cashier, i);
 	}
 	
 

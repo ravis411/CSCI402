@@ -8,7 +8,7 @@
 #include "synch.h"
 #include "list.h"
 #include "vector"
-#include <stdlib.h> 
+#include <stdlib.h> he
 
 //Settings Variables 
 //TODO:These should be more dynamic
@@ -267,12 +267,14 @@ void customerPictureClerkInteraction(int SSN, int money){
 	//We already have a lock so put my SSN in pictureClerkSharedData
 	pictureClerkSharedDataSSN[myLine] = SSN;
 	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
-	//Signal clerk
+
+
 	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
- 	//wait for clerk to take picture
 	pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
-	//Done
 	while(pictureClerkSharedDataPicture[myLine] == 0) {
+	
+		//Wait for clerk to take the picture
+		
 		if(rand()%10 > 7) {
 			printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
 			pictureClerkSharedDataPicture[myLine] = 0;
@@ -407,6 +409,7 @@ void Senator(int id){
 // ApplicationClerks go on break if they have no Customers in their line.
 // There is always a delay in an accepted application being "filed".
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
+void applicationClerkcheckAndGoOnBreak(int myLine); //Too many of these forward declarations
 void ApplicationClerk(int id){
 	int myLine = id;
 	int money = 0;
@@ -426,12 +429,9 @@ void ApplicationClerk(int id){
 			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else{
-			//eventually go on break //for now //?
-			applicationClerkState[myLine] = ONBREAK;
-			printf("ApplicationClerk %i is going on break.\n", myLine);
-			applicationClerkBreakCV->Wait(applicationClerkLineLock);
-			printf("ApplicationClerk %i is coming off break.\n", myLine);
-			applicationClerkState[myLine] = AVAILABLE;
+			//No Customers
+			//Go on break
+			applicationClerkcheckAndGoOnBreak(myLine);
 		}
 
 		//Should only do this when we are BUSY? When we have a customer...
@@ -461,6 +461,28 @@ void ApplicationClerk(int id){
 
 }//End ApplicationClerk
 
+//Utility for applicationClerk to gon on brak
+// Assumptions: called with clerkLineLock
+void applicationClerkcheckAndGoOnBreak(int myLine){
+	//Only go on break if there is at least one other clerk
+	bool freeOrAvailable = false;
+	for(int i = 0; i < CLERKCOUNT; i++){
+		if(i != myLine && ( applicationClerkState[i] == AVAILABLE || applicationClerkState[i] == BUSY ) ){
+			freeOrAvailable = true;
+			break;
+		}
+	}
+	//There is at least one clerk...go on a break.
+	if(freeOrAvailable){
+		applicationClerkState[myLine] = ONBREAK;
+		printf("ApplicationClerk %i is going on break.\n", myLine);
+		applicationClerkBreakCV->Wait(applicationClerkLineLock);
+		printf("ApplicationClerk %i is coming off break.\n", myLine);
+	}else{
+		currentThread->Yield();
+	}
+	applicationClerkState[myLine] = AVAILABLE;
+}
 
 
 
@@ -479,6 +501,7 @@ void ApplicationClerk(int id){
 // PictureClerks go on break if they have no Customers in their line.
 // There is always a delay in an accepted picture being "filed". 
 // This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.
+void pictureClerkcheckAndGoOnBreak(int myLine);
 void PictureClerk(int id){
 		int myLine = id;
 		int money = 0;
@@ -498,8 +521,8 @@ void PictureClerk(int id){
 				pictureClerkLineCV[myLine]->Signal(pictureClerkLineLock);
 				pictureClerkState[myLine] = BUSY;
 			}else{
-				//eventually go on break //for now //?
-				pictureClerkState[myLine] = AVAILABLE;
+				//Go on a break!
+				pictureClerkcheckAndGoOnBreak(myLine);
 			}
 
 			//Should only do this when we are BUSY? We have a customer...
@@ -517,6 +540,7 @@ void PictureClerk(int id){
 					pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 					pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 				bool first = true;
+				pictureClerkSharedDataPicture[myLine] = 0;
 				while(pictureClerkSharedDataPicture[myLine] == 0) {
 					if(!first) { 	printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, customerSSN); }
 					printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, customerSSN);
@@ -537,15 +561,34 @@ void PictureClerk(int id){
 			}
 	
 		}
-	
 
-	//Here are the output Guidelines for the PictureClerk
-	if(false){
-
-	printf("PictureClerk %i is going on break.\n", myLine);
-	printf("PictureClerk %i is coming off break.\n", myLine);
-	}
 }//End PictureClerk
+
+//Utility for pictureClerk to go on brak
+// Assumptions: called with clerkLineLock
+void pictureClerkcheckAndGoOnBreak(int myLine){
+	//Only go on break if there is at least one other clerk
+	bool freeOrAvailable = false;
+	for(int i = 0; i < CLERKCOUNT; i++){
+		if(i != myLine && ( pictureClerkState[i] == AVAILABLE || pictureClerkState[i] == BUSY ) ){
+			freeOrAvailable = true;
+			break;
+		}
+	}
+	//There is at least one clerk...go on a break.
+	if(freeOrAvailable){
+		pictureClerkState[myLine] = ONBREAK;
+		printf("PictureClerk %i is going on break.\n", myLine);
+		pictureClerkBreakCV->Wait(pictureClerkLineLock);
+		printf("PictureClerk %i is coming off break.\n", myLine);
+	}else{
+		currentThread->Yield();
+	}
+	pictureClerkState[myLine] = AVAILABLE;
+}
+
+
+
 
 
 

@@ -12,8 +12,8 @@
 
 //Settings Variables 
 //TODO:These should be more dynamic
-int CLERKCOUNT = 1;		//The number of clerks
-int CUSTOMERCOUNT = 3; 	//Number of customers
+int CLERKCOUNT = 2;		//The number of clerks
+int CUSTOMERCOUNT = 7; 	//Number of customers
 
 //Globals or constants
 enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
@@ -123,7 +123,7 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 	// Customer who can pay move in front of any Customer that has not paid. 
 	// HOWEVER, they do not move in front of any Customer that has also paid. 
 	// Customer money is to be deterined randomly, in increments of $100, $600, $1100, and $1600.
-void customerApplicationClerkInteraction(int SSN, int money);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
+void customerApplicationClerkInteraction(int SSN, int &money);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
 void customerPictureClerkInteraction(int SSN, int money);
 void customerPassportClerkInteraction(int SSN, int money);
 void customerCashierInteraction(int SSN, int money);
@@ -176,7 +176,7 @@ void Customer(int id){
 
 //The Customer's Interaction with the applicationClerk
 //    Get their application accepted by the ApplicationClerk
-void customerApplicationClerkInteraction(int SSN, int money){
+void customerApplicationClerkInteraction(int SSN, int &money){
 	int myLine = -1;
 	bool bribe = (money > 500) && (rand()%2);
 	//I have decided to go to the applicationClerk
@@ -414,18 +414,18 @@ void ApplicationClerk(int id){
 	int myLine = id;
 	int money = 0;
 	int identifier = -1; //TODO: FOR DEBUGGING SHOULD BE REMOVED!!
+	bool customerFromBribeLine;
 //Keep running
 	while(true){
-
 		applicationClerkLineLock->Acquire();
 
 		//If there is someone in my bribe line
 		if(applicationClerkBribeLineCount[myLine] > 0){
-			money += 500;
-			printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, identifier);
+			customerFromBribeLine = true;
 			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else if(applicationClerkLineCount[myLine] > 0){//if there is someone in my regular line
+			customerFromBribeLine = false;
 			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else{
@@ -444,11 +444,20 @@ void ApplicationClerk(int id){
 			//Customer Has given me their SSN?
 			//And I have a lock
 			int customerSSN = applicationClerkSharedData[myLine];
+			if(customerFromBribeLine){//This needs to go here so we know who the customer is.
+				money += 500;
+				printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, customerSSN);
+				currentThread->Yield();//Just to change things up a bit.
+			}
+			
+
 			printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
 
 			//Do my job - customer waiting - then yield before submitting
 			for(int i = 0; i < rand()%81 + 20; i++) { currentThread->Yield(); }
-			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, identifier);
+			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, customerSSN);
+
+			//TODO: NEED TO ACQUIRE A LOCK FOR THIS!!
 			applicationCompletion[customerSSN] = 1;
 
 			//Signal Customer that I'm Done.

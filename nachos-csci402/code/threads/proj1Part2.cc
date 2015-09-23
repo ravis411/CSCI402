@@ -143,7 +143,7 @@ void Customer(int id){
 	int money = (rand()%4)*500 + 100;
 
 	//Should I go to the applicationClerk first or get my picture taken first?
-	if(true || rand() % 2){
+	if(rand() % 2){
 		//Go to application clerk first
 		customerApplicationClerkInteraction(SSN, money);
 		customerPictureClerkInteraction(SSN, money);

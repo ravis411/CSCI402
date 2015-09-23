@@ -512,7 +512,7 @@ void applicationClerkcheckAndGoOnBreak(int myLine); //Too many of these forward 
 void ApplicationClerk(int id){
 	int myLine = id;
 	int money = 0;
-	int customerFromLine;//0 no line, 1 bribe line, 3 regular line
+	int customerFromLine;//0 no line, 1 bribe line, 2 regular line
 //Keep running
 	while(true){
 		applicationClerkLineLock->Acquire();
@@ -624,7 +624,7 @@ void PictureClerk(int id){
 		int myLine = id;
 		int money = 0;
 		int identifier = -1; //TODO: REMOVE THIS!!!
-		int customerFromLine;//0 no line, 1 bribe line, 3 regular line
+		int customerFromLine;//0 no line, 1 bribe line, 2 regular line
 		//Keep running
 		while(true){
 	
@@ -649,9 +649,9 @@ void PictureClerk(int id){
 
 			//Should only do this when we are BUSY? We have a customer...
 			if(customerFromLine != 0){
-				pictureClerkSharedDataPicture[myLine] = 0;
 				printf("PictureClerk %i has signalled a Customer to come to their counter.\n", myLine);
 				pictureClerkLock[myLine]->Acquire();
+			//	pictureClerkSharedDataPicture[myLine] = 0;
 				pictureClerkLineLock->Release();
 				//wait for customer data
 				pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
@@ -1062,8 +1062,6 @@ void managerCheckandWakupClerks(){
 void Part2TestSuit(){
 
 	printf("DEBUG: Starting Passport Office Simulation with %i Customers\n", CUSTOMERCOUNT);
-	printf("DEBUG: Starting Count: %i\n", checkedOutCount);
-
 
 	//Initialize dynamic variables
 	for(int i = 0; i < CLERKCOUNT; i++){

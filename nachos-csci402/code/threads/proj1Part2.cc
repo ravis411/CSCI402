@@ -14,11 +14,13 @@
 //TODO:These should be more dynamic
 
 int CLERKCOUNT = 2;		//The number of clerks
-int CUSTOMERCOUNT = 5; 	//Number of customers
+int CUSTOMERCOUNT = 3; 	//Number of customers
 
 
 //Globals or constants
 enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
+
+int checkedOutCount = 0;	//For the manager
 
 ///////////////////////////////////
 //Initialize Locks, CVS, and Monitors?
@@ -27,6 +29,7 @@ Lock *applicationClerkLineLock = new Lock("applicationClerkLineLock");	//The app
 Lock *pictureClerkLineLock = new Lock("pictureClerkLineLock");	//The applicationClerkLineLock
 Lock *passportClerkLineLock = new Lock("passportClerkLineLock");
 Lock *cashierLineLock = new Lock("cashierLineLock");
+Lock *managerLock = new Lock("managerLock");	//Lock for the manager
 std::vector<Lock*> applicationClerkLock;
 std::vector<Lock*> pictureClerkLock;
 std::vector<Lock*> passportClerkLock;
@@ -133,16 +136,17 @@ void customerApplicationClerkInteraction(int SSN, int &money);//forward declarat
 void customerPictureClerkInteraction(int SSN, int money);
 void customerPassportClerkInteraction(int SSN, int money);
 void customerCashierInteraction(int SSN, int money);
-
+void customerCheckOut(int SSN);
 void Customer(int id){
 	int SSN = id;
 	int myLine = -1;
 	int money = (rand()%4)*500 + 100;
 
 	//Should I go to the applicationClerk first or get my picture taken first?
-	if(rand() % 2){
+	if(true || rand() % 2){
 		//Go to application clerk first
 		customerApplicationClerkInteraction(SSN, money);
+		customerCheckOut(SSN);
 		customerPictureClerkInteraction(SSN, money);
 	}
 	else {
@@ -151,7 +155,8 @@ void Customer(int id){
 		customerApplicationClerkInteraction(SSN, money);
 	}
 
-	return;
+	//This terminates the customer should go at end.
+	customerCheckOut(SSN);
 
 	while(passportCompletion[SSN] == 0) {
 		customerPassportClerkInteraction(SSN, money);
@@ -179,11 +184,18 @@ return;
 	printf("Customer %i has gone to Cashier %i too soon. They are going to the back of the line.\n", SSN, myLine);
 	printf("Customer %i has given Cashier %i $100.", SSN, myLine);
 	printf("Customer %i is going outside the PassportOffice because there is a Senator present.", SSN);
-	printf("Customer %i is leaving the Passport Office.", SSN);
 	}
 
 }//End Customer
 
+//To tell the manager they did a great job and let him know we're done.
+void customerCheckOut(int SSN){
+	managerLock->Acquire();
+	checkedOutCount++;
+	managerLock->Release();
+	printf("Customer %i is leaving the Passport Office.\n", SSN);
+	currentThread->Finish();
+}
 
 //The Customer's Interaction with the applicationClerk
 //    Get their application accepted by the ApplicationClerk
@@ -492,29 +504,29 @@ void applicationClerkcheckAndGoOnBreak(int myLine); //Too many of these forward 
 void ApplicationClerk(int id){
 	int myLine = id;
 	int money = 0;
-	int identifier = -1; //TODO: FOR DEBUGGING SHOULD BE REMOVED!!
-	bool customerFromBribeLine;
+	int customerFromLine;//0 no line, 1 bribe line, 3 regular line
 //Keep running
 	while(true){
 		applicationClerkLineLock->Acquire();
 
 		//If there is someone in my bribe line
 		if(applicationClerkBribeLineCount[myLine] > 0){
-			customerFromBribeLine = true;
+			customerFromLine = 1;
 			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else if(applicationClerkLineCount[myLine] > 0){//if there is someone in my regular line
-			customerFromBribeLine = false;
+			customerFromLine = 2;
 			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
 			applicationClerkState[myLine] = BUSY;
 		}else{
 			//No Customers
-			//Go on break
+			//Go on break if there is another clerk
+			customerFromLine = 0;
 			applicationClerkcheckAndGoOnBreak(myLine);
 		}
 
-		//Should only do this when we are BUSY? When we have a customer...
-		if(applicationClerkState[myLine] == BUSY){
+		//Should only do this when we have a customer...
+		if(customerFromLine != 0){
 			printf("ApplicationClerk %i has signalled a Customer to come to their counter.\n", myLine);
 			applicationClerkLock[myLine]->Acquire();
 			applicationClerkLineLock->Release();
@@ -523,7 +535,9 @@ void ApplicationClerk(int id){
 			//Customer Has given me their SSN?
 			//And I have a lock
 			int customerSSN = applicationClerkSharedData[myLine];
-			if(customerFromBribeLine){//This needs to go here so we know who the customer is.
+			
+			//Customer from bribe line? //maybe should be separate signalwait  ehh?
+			if(customerFromLine == 1){
 				money += 500;
 				printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, customerSSN);
 				currentThread->Yield();//Just to change things up a bit.
@@ -531,19 +545,18 @@ void ApplicationClerk(int id){
 			
 
 			printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);
-				//TODO: NEED TO ACQUIRE A LOCK FOR THIS!!
-			//Do my job - customer waiting 
-			applicationCompletion[customerSSN] = 1;
-
+			
 			//Signal Customer that I'm Done.
 			applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
-			
+			applicationClerkLock[myLine]->Release();
+
 			//yield for filing time
 			for(int i = 0; i < rand()%81 + 20; i++) { currentThread->Yield(); }
-			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, customerSSN);
 			
-			applicationClerkLock[myLine]->Release();
-		}
+			//TODO: NEED TO ACQUIRE A LOCK FOR THIS!!
+			applicationCompletion[customerSSN] = 1;
+			printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, customerSSN);
+		}//end if have customer
 
 	}
 
@@ -565,11 +578,20 @@ void applicationClerkcheckAndGoOnBreak(int myLine){
 		applicationClerkState[myLine] = ONBREAK;
 		printf("ApplicationClerk %i is going on break.\n", myLine);
 		applicationClerkBreakCV->Wait(applicationClerkLineLock);
+		applicationClerkState[myLine] = BUSY;
 		printf("ApplicationClerk %i is coming off break.\n", myLine);
 	}else{
+		//If everyone is on break...
+		//applicationClerkState[myLine] = AVAILABLE;
+		applicationClerkLineLock->Release();
+		//Should we go to sleep?
+		managerLock->Acquire();//Do we really need to acquire a lock for this?
+		if(checkedOutCount == CUSTOMERCOUNT){managerLock->Release(); currentThread->Finish();}
+		managerLock->Release();//Guess not
 		currentThread->Yield();
+		applicationClerkLineLock->Acquire();
 	}
-	applicationClerkState[myLine] = AVAILABLE;
+	//applicationClerkState[myLine] = AVAILABLE;
 }
 
 
@@ -594,6 +616,7 @@ void PictureClerk(int id){
 		int myLine = id;
 		int money = 0;
 		int identifier = -1; //TODO: REMOVE THIS!!!
+		int customerFromLine;//0 no line, 1 bribe line, 3 regular line
 		//Keep running
 		while(true){
 	
@@ -601,20 +624,23 @@ void PictureClerk(int id){
 
 			//If there is someone in my bribe line
 			if(pictureClerkBribeLineCount[myLine] > 0){
+				customerFromLine = 1;
 				money += 500;
 				printf("PictureClerk %i has received $500 from Customer %i.\n", myLine, identifier);
 				pictureClerkBribeLineCV[myLine]->Signal(pictureClerkLineLock);
 				pictureClerkState[myLine] = BUSY;
 			}else if(pictureClerkLineCount[myLine] > 0){//if there is someone in my regular line
+				customerFromLine = 2;
 				pictureClerkLineCV[myLine]->Signal(pictureClerkLineLock);
 				pictureClerkState[myLine] = BUSY;
 			}else{
 				//Go on a break!
+				customerFromLine = 0;
 				pictureClerkcheckAndGoOnBreak(myLine);
 			}
 
 			//Should only do this when we are BUSY? We have a customer...
-			if(pictureClerkState[myLine] == BUSY){
+			if(customerFromLine != 0){
 				pictureClerkSharedDataPicture[myLine] = 0;
 				printf("PictureClerk %i has signalled a Customer to come to their counter.\n", myLine);
 				pictureClerkLock[myLine]->Acquire();
@@ -653,7 +679,7 @@ void PictureClerk(int id){
 
 }//End PictureClerk
 
-//Utility for pictureClerk to go on brak
+/*//Utility for pictureClerk to go on brak
 // Assumptions: called with clerkLineLock
 void pictureClerkcheckAndGoOnBreak(int myLine){
 	//Only go on break if there is at least one other clerk
@@ -674,8 +700,39 @@ void pictureClerkcheckAndGoOnBreak(int myLine){
 		currentThread->Yield();
 	}
 	pictureClerkState[myLine] = AVAILABLE;
-}
+}*/
 
+//Utility for applicationClerk to gon on brak
+// Assumptions: called with clerkLineLock
+void pictureClerkcheckAndGoOnBreak(int myLine){
+	//Only go on break if there is at least one other clerk
+	bool freeOrAvailable = false;
+	for(int i = 0; i < CLERKCOUNT; i++){
+		if(i != myLine && ( pictureClerkState[i] == AVAILABLE || pictureClerkState[i] == BUSY ) ){
+			freeOrAvailable = true;
+			break;
+		}
+	}
+	//There is at least one clerk...go on a break.
+	if(freeOrAvailable){
+		pictureClerkState[myLine] = ONBREAK;
+		printf("PictureClerk %i is going on break.\n", myLine);
+		pictureClerkBreakCV->Wait(pictureClerkLineLock);
+		pictureClerkState[myLine] = BUSY;
+		printf("PictureClerk %i is coming off break.\n", myLine);
+	}else{
+		//If everyone is on break...
+		//applicationClerkState[myLine] = AVAILABLE;
+		pictureClerkLineLock->Release();
+		//Should we go to sleep?
+		managerLock->Acquire();//Do we really need to acquire a lock for this?
+		if(checkedOutCount == CUSTOMERCOUNT){managerLock->Release(); currentThread->Finish();}
+		managerLock->Release();//Guess not
+		currentThread->Yield();
+		pictureClerkLineLock->Acquire();
+	}
+	//applicationClerkState[myLine] = AVAILABLE;
+}
 
 
 
@@ -848,7 +905,6 @@ void Cashier(int id){
 
 	//Here are the output Guidelines for the Cashier
 	if(false){
-	int identifier = -1;
 	printf("Cashier %i has signalled a Customer to come to their counter.\n", myLine);
 	printf("Cashier %i has received SSN %i from Customer %i.\n", myLine, identifier, identifier);
 	printf("Cashier %i has verified that Customer %i has been certified by a PassportClerk.\n", myLine, identifier);
@@ -875,6 +931,7 @@ void Cashier(int id){
 	// You are to print the total received from each clerk type, and a total from all clerks.
 	// This is to be printed on a fairly regular basis.
 void managerCheckandWakupClerks();//Forward declaration..?
+void checkEndOfDay();
 void Manager(int id){
 
 	//Untill End of Simulation
@@ -884,6 +941,10 @@ void Manager(int id){
 		//Check Lines Wake up Clerk if More than 3 in a line.
 		//Check ApplicationClerk
 		managerCheckandWakupClerks();
+
+		//Check if all the customers are gone and let all the clerks go home
+		checkEndOfDay();
+
 
 		currentThread->Yield();//Let someone else get the CPU
 	}
@@ -904,6 +965,20 @@ void Manager(int id){
 
 }//End Manager
 
+
+//This will put the clerks and the manager to sleep so everyone can go to sleep and nachos can clean up
+void checkEndOfDay(){
+	managerLock->Acquire();
+	if (checkedOutCount == CUSTOMERCOUNT){
+		//printf("DEBUG: MANAGER: END OF DAY!\n");
+		//All the customers are gone
+		//Lets all go to sleep
+		managerLock->Release();
+		currentThread->Finish();
+	}
+	managerLock->Release();
+}
+
 //Utilities for Manager
 
 // managerCheckandWakeupCLERK
@@ -920,7 +995,7 @@ bool managerCheckandWakeupCLERK(Lock* managerCWCLineLock, std::vector<int>& mana
 		if(managerCWClineCount[i] > 3)
 			wakeUp = true;
 	}
-	managerCWCBreakCV->Signal(managerCWCLineLock);
+	if(wakeUp && asleep){managerCWCBreakCV->Signal(managerCWCLineLock);}
 	managerCWCLineLock->Release();
 	return asleep && wakeUp;
 }
@@ -954,6 +1029,10 @@ void managerCheckandWakupClerks(){
 
 //This runs the simulation
 void Part2TestSuit(){
+
+	printf("DEBUG: Starting Passport Office Simulation with %i Customers\n", CUSTOMERCOUNT);
+	printf("DEBUG: Starting Count: %i\n", checkedOutCount);
+
 
 	//Initialize dynamic variables
 	for(int i = 0; i < CLERKCOUNT; i++){
@@ -989,13 +1068,15 @@ void Part2TestSuit(){
 		t = new Thread("PictureClerk " + i);
 		t->Fork(PictureClerk, i);
 
-		t = new Thread("PassportClerk " + i);
-		t->Fork(PassportClerk, i);
+		//t = new Thread("PassportClerk " + i);
+		//t->Fork(PassportClerk, i);
 
-		t = new Thread("Cashier " + i);
-		t->Fork(Cashier, i);
+		//t = new Thread("Cashier " + i);
+		//t->Fork(Cashier, i);
 	}
 	
+	t = new Thread("Manager");
+	t->Fork(Manager, 0);
 
 }
 

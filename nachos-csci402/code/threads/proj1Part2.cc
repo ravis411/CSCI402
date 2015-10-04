@@ -13,49 +13,53 @@
 
 //Settings Variables 
 
+
 int CLERKCOUNT;		//The number of clerks
 int CUSTOMERCOUNT; 	//Number of customers
+int SENATORCOUNT;  //Number of senators
+
 
 bool valid;
 bool THEEND = false;
 
 //Globals or constants
-enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
-
-int checkedOutCount = 0;	//For the manager
+enum CLERKSTATE {AVAILABLE, SIGNALEDCUSTOMER, BUSY, ONBREAK};				//enum for the CLERKSTATE
 
 ///////////////////////////////////
-//Initialize Locks, CVS, and Monitors?
+// Locks, CVS, and Monitors?
 //Locks
-Lock *applicationClerkLineLock = new Lock("applicationClerkLineLock");	//The applicationClerkLineLock
-Lock *pictureClerkLineLock = new Lock("pictureClerkLineLock");	//The applicationClerkLineLock
-Lock *passportClerkLineLock = new Lock("passportClerkLineLock");
-Lock *cashierLineLock = new Lock("cashierLineLock");
-Lock *managerLock = new Lock("managerLock");	//Lock for the manager
+Lock *applicationClerkLineLock;// = new Lock("applicationClerkLineLock");	//The applicationClerkLineLock
+Lock *pictureClerkLineLock;// = new Lock("pictureClerkLineLock");	//The applicationClerkLineLock
+Lock *passportClerkLineLock;// = new Lock("passportClerkLineLock");
+Lock *cashierLineLock;// = new Lock("cashierLineLock");
+Lock *managerLock;// = new Lock("managerLock");	//Lock for the manager
 std::vector<Lock*> applicationClerkLock;
 std::vector<Lock*> pictureClerkLock;
 std::vector<Lock*> passportClerkLock;
 std::vector<Lock*> cashierLock;
 //CVS
+Condition *passportOfficeOutsideLineCV;//This can be the outside line for when senators are present
+Condition *senatorLineCV;
+
 std::vector<Condition*> applicationClerkLineCV;
 std::vector<Condition*> applicationClerkBribeLineCV;	//applicationClerk CVs
 std::vector<Condition*> applicationClerkCV;
-Condition *applicationClerkBreakCV = new Condition("applicationClerkBreakCV");//To keep track of clerks on break
+Condition *applicationClerkBreakCV;// = new Condition("applicationClerkBreakCV");//To keep track of clerks on break
 
 std::vector<Condition*> pictureClerkLineCV;
 std::vector<Condition*> pictureClerkBribeLineCV;	//pictureClerk CVs
 std::vector<Condition*> pictureClerkCV;
-Condition *pictureClerkBreakCV = new Condition("pictureClerkBreakCV");//To keep track of clerks on break
+Condition *pictureClerkBreakCV;// = new Condition("pictureClerkBreakCV");//To keep track of clerks on break
 
 std::vector<Condition*> passportClerkLineCV;
 std::vector<Condition*> passportClerkBribeLineCV;	//passportClerk CVs
 std::vector<Condition*> passportClerkCV;
-Condition *passportClerkBreakCV = new Condition("passportClerkBreakCV");//To keep track of clerks on break
+Condition *passportClerkBreakCV;// = new Condition("passportClerkBreakCV");//To keep track of clerks on break
 
 std::vector<Condition*> cashierLineCV;
 std::vector<Condition*> cashierBribeLineCV;	//passportClerk CVs
 std::vector<Condition*> cashierCV;
-Condition *cashierBreakCV = new Condition("cashierBreakCV");//To keep track of clerks on break
+Condition *cashierBreakCV;// = new Condition("cashierBreakCV");//To keep track of clerks on break
 
 
 //States
@@ -84,6 +88,14 @@ std::vector<int> passportPunishment(CUSTOMERCOUNT, 0); //Used by passportClerk t
 std::vector<int> cashierSharedDataSSN(CLERKCOUNT, 0); //This can be used by the customer to pass SSN
 std::vector<int> cashierRejection(CUSTOMERCOUNT, 0); //Used by the cashier to reject customers.
 std::vector<int> doneCompletely(CUSTOMERCOUNT, 0); //Used by customer to tell when done.
+
+int customersPresentCount = 0;//For telling the manager we're in the office
+int senatorPresentCount = 0;
+int checkedOutCount = 0;	//For the manager to put everyone to sleep when the customers have all finished
+int senatorLineCount = 0;	//For counting the sentors.//They wait in a private line for the manager while waiting for customers to leave.
+int passportOfficeOutsideLineCount = 0;
+bool senatorSafeToEnter = false; //To tell senators when it is safe to enter
+bool senatorPresentWaitOutSide = false;//Set by the manager to tell customers when a senator is present...
 //
 //End variables
 /////////////////////////////////
@@ -134,48 +146,62 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 	// Customer who can pay move in front of any Customer that has not paid. 
 	// HOWEVER, they do not move in front of any Customer that has also paid. 
 	// Customer money is to be deterined randomly, in increments of $100, $600, $1100, and $1600.
-void customerApplicationClerkInteraction(int SSN, int &money);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
-void customerPictureClerkInteraction(int SSN, int money);
+bool customerApplicationClerkInteraction(int SSN, int &money);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
+bool customerPictureClerkInteraction(int SSN, int money);
 bool customerPassportClerkInteraction(int SSN, int money);
 bool customerCashierInteraction(int SSN, int money);
+void customerCheckIn();
+bool customerCheckSenator(int SSN);
+void customerCheckIn(int SSN);
 void customerCheckOut(int SSN);
+
 void Customer(int id){
+	bool appClerkDone = false; //State vars
+	bool pictureClerkDone = false;
+	bool passportClerkDone = false;
+	bool cashierDone = false; 
 	int SSN = id;
 	int myLine = -1;
 	int money = (rand()%4)*500 + 100;
+	bool appClerkFirst = rand() % 2;
 
-	//Should I go to the applicationClerk first or get my picture taken first?
-	if(rand() % 2){
-		//Go to application clerk first
-		customerApplicationClerkInteraction(SSN, money);
-		customerPictureClerkInteraction(SSN, money);
-	}
-	else {
-		//Go to the picture clerk first
-		customerPictureClerkInteraction(SSN, money);
-		customerApplicationClerkInteraction(SSN, money);
-	}
+	customerCheckIn(SSN);
 
+	while(true){
 
-	while(passportCompletion[SSN] == 0) {
-		if (customerPassportClerkInteraction(SSN, money) == 0) {
-			for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); }
+		//Check if a senator is present and wait outside if there is.
+		customerCheckSenator(SSN);
+
+		if( !(appClerkDone) && (appClerkFirst || pictureClerkDone) ){ //Go to applicationClerk
+			appClerkDone = customerApplicationClerkInteraction(SSN, money);
 		}
+		else if( !pictureClerkDone ){
+			//Go to the picture clerk
+			pictureClerkDone = customerPictureClerkInteraction(SSN, money);
+		}
+		else if(!passportClerkDone){
+			/*while(passportCompletion[SSN] == 0) {
+					if (customerPassportClerkInteraction(SSN, money) == 0) {
+						for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); }
+					}
 
-	}
-
-	
-	while(doneCompletely[SSN] == 0) {
-		if (customerCashierInteraction(SSN, money) == 0) {
-			for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); }
+			}*/
+			passportClerkDone = customerPassportClerkInteraction(SSN, money);
+		}
+		else if(!cashierDone){
+			/*while(doneCompletely[SSN] == 0) {
+				if (customerCashierInteraction(SSN, money) == 0) {
+					for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); }
+				}
+			}*/
+			cashierDone = customerCashierInteraction(SSN, money);
+		}
+		else{
+			//This terminates the customer should go at end.
+			customerCheckOut(SSN);
 		}
 	}
 
-//This terminates the customer should go at end.
-	customerCheckOut(SSN);
-
-
-return;
 	//Here are the output Guidelines for the Customer
 	if(false){
 	printf("Customer %i has gotten in regular line for PictureClerk %i.\n", SSN, myLine);
@@ -192,14 +218,47 @@ return;
 	printf("Customer %i has gone to PassportClerk %i too soon. They are going to the back of the line.\n", SSN, myLine);
 	printf("Customer %i has gone to Cashier %i too soon. They are going to the back of the line.\n", SSN, myLine);
 	printf("Customer %i has given Cashier %i $100.", SSN, myLine);
-	printf("Customer %i is going outside the PassportOffice because there is a Senator present.", SSN);
 	}
 
 }//End Customer
 
+
+//Wait outside or something there's a Senator present
+void customerSenatorPresentWaitOutside(int SSN){
+	printf("Customer %i is going outside the PassportOffice because there is a Senator present.\n", SSN);
+
+	//Go outside.
+	customersPresentCount--;
+	passportOfficeOutsideLineCount++;
+	passportOfficeOutsideLineCV->Wait(managerLock);
+	//Can go back inside now.
+	passportOfficeOutsideLineCount--;
+	customersPresentCount++;
+}
+
+// Checks if a senator is present. Then goes outside if there is.
+// 
+bool customerCheckSenator(int SSN){
+	managerLock->Acquire();
+	bool present = senatorPresentWaitOutSide;
+
+	if(present)
+		customerSenatorPresentWaitOutside(SSN);
+
+	managerLock->Release();
+	return present;
+}
+
+void customerCheckIn(int SSN){
+	managerLock->Acquire();
+	customersPresentCount++;
+	managerLock->Release();
+}
+
 //To tell the manager they did a great job and let him know we're done.
 void customerCheckOut(int SSN){
 	managerLock->Acquire();
+	customersPresentCount--;
 	checkedOutCount++;
 	managerLock->Release();
 	printf("Customer %i is leaving the Passport Office.\n", SSN);
@@ -208,7 +267,7 @@ void customerCheckOut(int SSN){
 
 //The Customer's Interaction with the applicationClerk
 //    Get their application accepted by the ApplicationClerk
-void customerApplicationClerkInteraction(int SSN, int &money){
+bool customerApplicationClerkInteraction(int SSN, int &money){
 	int myLine = -1;
 	bool bribe = (money > 500) && (rand()%2);
 	//I have decided to go to the applicationClerk
@@ -227,18 +286,30 @@ void customerApplicationClerkInteraction(int SSN, int &money){
 	}
 	
 	//I must wait in line
-	if(applicationClerkState[myLine] == BUSY){
+	if(applicationClerkState[myLine] != AVAILABLE){
 		if(!bribe){
 			applicationClerkLineCount[myLine]++;
 			printf("Customer %i has gotten in regular line for ApplicationClerk %i.\n", SSN, myLine);
 			applicationClerkLineCV[myLine]->Wait(applicationClerkLineLock);
 			applicationClerkLineCount[myLine]--;
+			//See if the clerk for my line signalled me, otherwise check if a senator is here and go outside.
+			if(applicationClerkState[myLine] != SIGNALEDCUSTOMER){
+				applicationClerkLineLock->Release();
+				if(customerCheckSenator(SSN))
+					return false;
+			}
 		}else{
 			applicationClerkBribeLineCount[myLine]++;
 			printf("Customer %i has gotten in bribe line for ApplicationClerk %i.\n", SSN, myLine);
 			applicationClerkBribeLineCV[myLine]->Wait(applicationClerkLineLock);
-			money -= 500;
 			applicationClerkBribeLineCount[myLine]--;
+			//See if the clerk for my line signalled me, otherwise check if a senator is here and go outside.
+			if(applicationClerkState[myLine] != SIGNALEDCUSTOMER){
+				applicationClerkLineLock->Release();
+				if(customerCheckSenator(SSN))
+					return false;
+			}
+			money -= 500;
 		}
 	}
 	//Clerk is AVAILABLE
@@ -257,13 +328,13 @@ void customerApplicationClerkInteraction(int SSN, int &money){
 	//Done
 	applicationClerkLock[myLine]->Release();
 	//Done Return
-	return;
+	return true;
 }//End customerApplicationClerkInteraction
 
 
 //The Customer's Interaction with the pictureClerk
 //Get their picture accepted by the pictureClerk
-void customerPictureClerkInteraction(int SSN, int money){
+bool customerPictureClerkInteraction(int SSN, int money){
 	int myLine = -1;
 	bool bribe = (money > 500) && (rand()%2);
 
@@ -287,12 +358,16 @@ void customerPictureClerkInteraction(int SSN, int money){
 			printf("Customer %i has gotten in regular line for PictureClerk %i.\n", SSN, myLine);
 			pictureClerkLineCV[myLine]->Wait(pictureClerkLineLock);
 			pictureClerkLineCount[myLine]--;
+			if(customerCheckSenator(SSN))
+				return false;
 		}else{
 			pictureClerkBribeLineCount[myLine]++;
 			printf("Customer %i has gotten in bribe line for PictureClerk %i.\n", SSN, myLine);
 			pictureClerkBribeLineCV[myLine]->Wait(pictureClerkLineLock);
-			money -= 500;
 			pictureClerkBribeLineCount[myLine]--;
+			if(customerCheckSenator(SSN))
+				return false;
+			money -= 500;
 		}
 	}
 	//Clerk is AVAILABLE
@@ -327,7 +402,7 @@ void customerPictureClerkInteraction(int SSN, int money){
 	}
 	pictureClerkLock[myLine]->Release();
 	//Done Return
-	return;
+	return true;
 }//End customerPictureClerkInteraction
 
 bool customerPassportClerkInteraction(int SSN, int money){
@@ -351,12 +426,16 @@ bool customerPassportClerkInteraction(int SSN, int money){
 			printf("Customer %i has gotten in regular line for PassportClerk %i.\n", SSN, myLine);
 			passportClerkLineCV[myLine]->Wait(passportClerkLineLock);
 			passportClerkLineCount[myLine]--;
+			if(customerCheckSenator(SSN))
+				return false;
 		}else{
 			passportClerkBribeLineCount[myLine]++;
 			printf("Customer %i has gotten in bribe line for PassportClerk %i.\n", SSN, myLine);
 			passportClerkBribeLineCV[myLine]->Wait(passportClerkLineLock);
-			money -= 500;
 			passportClerkBribeLineCount[myLine]--;
+			if(customerCheckSenator(SSN))
+				return false;
+			money -= 500;
 		}
 	}
 	//Clerk is AVAILABLE
@@ -409,12 +488,17 @@ bool customerCashierInteraction(int SSN, int money){
 			printf("Customer %i has gotten in regular line for Cashier %i.\n", SSN, myLine);
 			cashierLineCV[myLine]->Wait(cashierLineLock);
 			cashierLineCount[myLine]--;
+			if(customerCheckSenator(SSN))
+				return false;
 		}else{
 			cashierBribeLineCount[myLine]++;
 			printf("Customer %i has gotten in bribe line for Cashier %i.\n", SSN, myLine);
 			cashierBribeLineCV[myLine]->Wait(cashierLineLock);
-			money -= 500;
 			cashierBribeLineCount[myLine]--;
+			if(customerCheckSenator(SSN))
+				return false;
+			money -= 500;
+			
 		}
 	}
 	//Clerk is AVAILABLE
@@ -454,6 +538,14 @@ bool customerCashierInteraction(int SSN, int money){
 
 
 
+
+
+
+
+
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
 //Senator: 
 // Senators, being special people who need their privacy and security, get to use the Passport Office all by themselves. 
 	// When a Senator shows up, they wait until all Customers currently being serviced are handled. 
@@ -462,10 +554,21 @@ bool customerCashierInteraction(int SSN, int money){
 	// Customers must remember the type of line they are in, but they have to get back in line once the Senator leaves.
 	// Once the current Customers have been serviced, the Senator gets to go to each Clerk type and get their passport. 
 	// Any Cusotmer showing up when a Senator is present must wait "outside" - a different line altogether.
-// Once a Senator is finished, all waiting Customers get to proceed as normal. 
+// Once a Senator is finished, all waiting Customers get to proceed as normal.
+void senatorArriveAtPassportOffice();
+void senatorLeavePassportOffice(int SSN);
 void Senator(int id){
 	int SSN = id;
 	int myLine = -1;
+
+	//Check in
+	senatorArriveAtPassportOffice();
+
+	//Safe to do 'normal' interactions now....
+	//TODO: Should be able to use the customer...Interactions 
+
+	//Done lets leave
+	senatorLeavePassportOffice(SSN);
 
 
 //Here are the output Guidelines for the Senator
@@ -483,10 +586,78 @@ void Senator(int id){
 	printf("Senator %i has gone to PassportClerk %i too soon. They are going to the back of the line.\n", SSN, myLine);
 	printf("Senator %i has gone to Cashier %i too soon. They are going to the back of the line.\n", SSN, myLine);
 	printf("Senator %i has given Cashier %i $100.", SSN, myLine);
-	printf("Senator %i is leaving the Passport Office.", SSN);
 	}
 
 } //End Senator
+
+//Called when the senator gets to the passport office...
+//	tells the manager they are here
+//	waits if there are customers
+void senatorArriveAtPassportOffice(){
+	//Talk to manager tell them I've arrived.
+	//see if senators are here.
+	managerLock->Acquire();
+	while(!senatorSafeToEnter){//Wait in the senator line for customers to leave
+		senatorLineCount++;
+		senatorLineCV->Wait(managerLock);
+		senatorLineCount--;
+	}
+	senatorPresentCount++;
+	managerLock->Release();
+}
+
+void senatorLeavePassportOffice(int SSN){
+	//Done lets leave
+	managerLock->Acquire();
+	senatorPresentCount--;
+	checkedOutCount++;
+	managerLock->Release();
+	printf("Senator %i is leaving the Passport Office.", SSN);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////
+///// CLERKS
+//////////////////////////////////////////////
+
+
+
+
+
+
+
+
+//This may be necessary to check for race conditions while a senator is waiting outside
+// Before the customer leaves their line the clerk might think they are able to call them
+bool clerkCheckForSenator(){
+	managerLock->Acquire();
+	if(senatorPresentWaitOutSide && !senatorSafeToEnter){
+		managerLock->Release();
+		//Lets just wait a bit...
+		currentThread->Yield();
+		return true;
+	}
+	managerLock->Release();
+	return false;
+}
+
+
+
 
 
 
@@ -513,17 +684,20 @@ void ApplicationClerk(int id){
 	int customerFromLine;//0 no line, 1 bribe line, 2 regular line
 //Keep running
 	while(true){
+
+		if(clerkCheckForSenator()) continue; //Waiting for senators to enter just continue.
+
 		applicationClerkLineLock->Acquire();
 
 		//If there is someone in my bribe line
 		if(applicationClerkBribeLineCount[myLine] > 0){
 			customerFromLine = 1;
 			applicationClerkBribeLineCV[myLine]->Signal(applicationClerkLineLock);
-			applicationClerkState[myLine] = BUSY;
+			applicationClerkState[myLine] = SIGNALEDCUSTOMER;
 		}else if(applicationClerkLineCount[myLine] > 0){//if there is someone in my regular line
 			customerFromLine = 2;
 			applicationClerkLineCV[myLine]->Signal(applicationClerkLineLock);
-			applicationClerkState[myLine] = BUSY;
+			applicationClerkState[myLine] = SIGNALEDCUSTOMER;
 		}else{
 			//No Customers
 			//Go on break if there is another clerk
@@ -626,6 +800,8 @@ void PictureClerk(int id){
 		//Keep running
 		while(true){
 	
+			if(clerkCheckForSenator()) continue; //Waiting for senators to enter just continue.
+
 			pictureClerkLineLock->Acquire();
 
 			//If there is someone in my bribe line
@@ -746,6 +922,8 @@ void PassportClerk(int id){
 		
 	//Keep running
 	while(true){
+
+		if(clerkCheckForSenator()) continue; //Waiting for senators to enter just continue.
 
 		passportClerkLineLock->Acquire();
 		//If there is someone in my bribe line
@@ -876,6 +1054,8 @@ void Cashier(int id){
 	//Keep running
 	while (true){
 
+		if(clerkCheckForSenator()) continue; //Waiting for senators to enter just continue.
+
 		cashierLineLock->Acquire();
 
 		//If there is someone in my bribe line
@@ -978,7 +1158,7 @@ void cashiercheckAndGoOnBreak(int myLine){
 		//If everyone is on break...
 		//cashierState[myLine] = AVAILABLE;
 		cashierLineLock->Release();
-		//Should we go to sleep?
+		//Should we go to sleep?//Check end of day
 		managerLock->Acquire();//Do we really need to acquire a lock for this?
 		if(checkedOutCount == CUSTOMERCOUNT){managerLock->Release(); currentThread->Finish();}
 		managerLock->Release();//Guess not
@@ -989,7 +1169,10 @@ void cashiercheckAndGoOnBreak(int myLine){
 }
 
 
-
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+// Manager
+////////////////////////////////////////////////
 // Managers tell the various Clerks when to start working, when lines get too long. 
 //
 // Clerks go on break when they have no one in their line.
@@ -1000,12 +1183,17 @@ void cashiercheckAndGoOnBreak(int myLine){
 void managerCheckandWakupClerks();//Forward declaration..?
 void checkEndOfDay();
 void managerCountMoney();
+void managerSenatorCheck();
 void Manager(int id){
 
 	//Untill End of Simulation
 	while(true){
 		for(int i = 0; i < 1000; i++) { 
 		
+
+			//SENATORS
+			managerSenatorCheck();
+
 			//Check Lines Wake up Clerk if More than 3 in a line.
 			//Check ApplicationClerk
 			managerCheckandWakupClerks();
@@ -1022,21 +1210,86 @@ void Manager(int id){
 		managerCountMoney();
 	}
 
+}//End Manager
 
 
-	//Here are the output Guidelines for the Manager
-	if(false){
-	int identifier = -1;
+
+
+//Wake up customers in all lines
+void managerBroacastLine(std::vector<Condition*> &line, std::vector<Condition*> &bribeLine, Lock* lock, int count){
+	for(int i = 0; i < count; i++){
+		lock->Acquire();
+		line[i]->Broadcast(lock);
+		bribeLine[i]->Broadcast(lock);
+		lock->Acquire();
+	}
+}
+void managerBroadcastCustomerLines(){
+	//Wake up all customers in line//So they can go outside
+
+	//App clerks
+	managerBroacastLine(applicationClerkLineCV, applicationClerkBribeLineCV, applicationClerkLineLock, CLERKCOUNT);
+
+	//Picture clerks
+	managerBroacastLine(pictureClerkLineCV, pictureClerkBribeLineCV, pictureClerkLineLock, CLERKCOUNT);
+
+	//Passport Clerks
+	managerBroacastLine(passportClerkLineCV, passportClerkBribeLineCV, passportClerkLineLock, CLERKCOUNT);
+
+	//Cashiers
+	managerBroacastLine(cashierLineCV, cashierBribeLineCV, cashierLineLock, CLERKCOUNT);
+}
+
+//Checks if a sentor is present...does somehting
+void managerSenatorCheck(){
+	//customersPresentCount
+	bool senatorWaiting;
+	bool senatorsInside;
+	bool customersInside;
+	bool customersOutside;
+
+	
+	managerLock->Acquire();
+
+	senatorWaiting = (senatorLineCount > 0);
+	senatorsInside = (senatorPresentCount > 0);
+	customersInside = (customersPresentCount > 0);
+	customersOutside = (passportOfficeOutsideLineCount > 0);
+
+	//See if a senator is waiting in line...
+	if(senatorWaiting){
+		if(!senatorPresentWaitOutSide) printf("DEBUG: MANAGER NOTICED A SENATOR!.\n");
+		senatorPresentWaitOutSide = true;
+
+		//Wake up customers in line so they go outside.
+		if(customersInside)
+			managerBroadcastCustomerLines();
+	}
+	
+	if(senatorWaiting && !customersInside){
+		if(!senatorSafeToEnter) printf("DEBUG: MANAGER: SENATORS SAFE TO ENTER.\n");
+		senatorSafeToEnter = true;
+		senatorLineCV->Broadcast(managerLock);
 	}
 
-}//End Manager
+	if(!senatorWaiting && !senatorsInside){
+		if(senatorSafeToEnter) printf("DEBUG: SENATORS GONE CUSTOMERS COME BACK IN!.\n");
+		senatorSafeToEnter = false;
+		senatorPresentWaitOutSide = false;
+		passportOfficeOutsideLineCV->Broadcast(managerLock);
+	}
+
+
+	managerLock->Release();
+}//End managerSenatorCheck
 
 
 //This will put the clerks and the manager to sleep so everyone can go to sleep and nachos can clean up
 void checkEndOfDay(){
 	managerLock->Acquire();
-	if (checkedOutCount == CUSTOMERCOUNT){
-		printf("DEBUG: MANAGER: END OF DAY!\n");
+
+	if (checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){
+		//printf("DEBUG: MANAGER: END OF DAY!\n");
 		//All the customers are gone
 		//Lets all go to sleep
 		THEEND = true;
@@ -1087,7 +1340,7 @@ void managerCheckandWakupClerks(){
 	
 	//Check Passport Clerks
 	if(managerCheckandWakeupCLERK(passportClerkLineLock, passportClerkLineCount, passportClerkState, passportClerkBreakCV, CLERKCOUNT)){
-		printf("Manager has woken up an PassportClerk.\n");
+		printf("Manager has woken up a PassportClerk.\n");
 	}
 
 	//Check Cashiers
@@ -1163,6 +1416,25 @@ void Part2TestSuit(){
 				valid = true;
 			}
 		}
+
+	//Initialize Variables
+	senatorPresentWaitOutSide = false;
+	senatorSafeToEnter = false;
+
+	applicationClerkLineLock = new Lock("applicationClerkLineLock");	//The applicationClerkLineLock
+	pictureClerkLineLock = new Lock("pictureClerkLineLock");	//The applicationClerkLineLock
+	passportClerkLineLock = new Lock("passportClerkLineLock");
+	cashierLineLock = new Lock("cashierLineLock");
+
+	managerLock = new Lock("managerLock");	//Lock for the manager
+
+	applicationClerkBreakCV = new Condition("applicationClerkBreakCV");//To keep track of clerks on break
+	pictureClerkBreakCV = new Condition("pictureClerkBreakCV");//To keep track of clerks on break
+	passportClerkBreakCV = new Condition("passportClerkBreakCV");//To keep track of clerks on break
+	cashierBreakCV = new Condition("cashierBreakCV");//To keep track of clerks on break
+	passportOfficeOutsideLineCV = new Condition("outsideLineCV");//To keep track of clerks on break
+	senatorLineCV = new Condition("senatorLineCV");
+
 
 
 		printf("DEBUG: Starting Passport Office Simulation with %i Customers and %i Clerks \n", CUSTOMERCOUNT, CLERKCOUNT);
@@ -1243,13 +1515,19 @@ void Part2TestSuit(){
 		}
 
 
-
 		Thread *t;
 
-		for (int i = 0; i < CUSTOMERCOUNT; i++){
+		for(int i = 0; i < CUSTOMERCOUNT; i++){
 			t = new Thread("Customer " + i);
 			t->Fork(Customer, i);
 		}
+		
+		for(int i = 0; i < SENATORCOUNT; i++){
+			t = new Thread("Senator " + i);
+			t->Fork(Senator, CUSTOMERCOUNT + i);
+		}
+
+
 
 		for (int i = 0; i < CLERKCOUNT; i++){
 			t = new Thread("ApplicationClerk " + i);

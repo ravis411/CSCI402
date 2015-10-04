@@ -9,13 +9,15 @@
 #include "list.h"
 #include "vector"
 #include <stdlib.h> 
+#include <iostream>
 
 //Settings Variables 
-//TODO:These should be more dynamic
 
-int CLERKCOUNT = 2;		//The number of clerks
-int CUSTOMERCOUNT = 3; 	//Number of customers
+int CLERKCOUNT;		//The number of clerks
+int CUSTOMERCOUNT; 	//Number of customers
 
+bool valid;
+bool THEEND = false;
 
 //Globals or constants
 enum CLERKSTATE {AVAILABLE, BUSY, ONBREAK};				//enum for the CLERKSTATE
@@ -72,12 +74,12 @@ std::vector<int> cashierLineCount(CLERKCOUNT, 0);			//cashierLineCount
 std::vector<int> cashierBribeLineCount(CLERKCOUNT, 0);		//cashierBribeLineCount
 //Shared Data //Should only be accessed with the corresponding lock / cv
 std::vector<int> applicationClerkSharedData(CLERKCOUNT, 0);	//This can be used by the customer to pass SSN
-std::vector<int> pictureClerkSharedDataSSN(CLERKCOUNT,0); //This can be used by the customer to pass SSN
-std::vector<int> pictureClerkSharedDataPicture(CLERKCOUNT,0); // This can be used by the customer to pass acceptance of the picture
+std::vector<int> pictureClerkSharedDataSSN(CLERKCOUNT, 0); //This can be used by the customer to pass SSN
+std::vector<int> pictureClerkSharedDataPicture(CLERKCOUNT, 0); // This can be used by the customer to pass acceptance of the picture
 std::vector<int> passportClerkSharedDataSSN(CLERKCOUNT, 0); //This can be used by the customer to pass SSN
 std::vector<bool> applicationCompletion(CUSTOMERCOUNT, 0); //Used by passportCerkto verify that application has been completed
 std::vector<bool> pictureCompletion(CUSTOMERCOUNT, 0); //Used by passportClerk to verify that picture has beeen completed 
-std::vector<bool> passportCompletion(CUSTOMERCOUNT,0); // Used by cashier to verify that the passport is complete
+std::vector<bool> passportCompletion(CUSTOMERCOUNT, 0); // Used by cashier to verify that the passport is complete
 std::vector<int> passportPunishment(CUSTOMERCOUNT, 0); //Used by passportClerk to punish bad people.
 std::vector<int> cashierSharedDataSSN(CLERKCOUNT, 0); //This can be used by the customer to pass SSN
 std::vector<int> cashierRejection(CUSTOMERCOUNT, 0); //Used by the cashier to reject customers.
@@ -436,7 +438,7 @@ bool customerCashierInteraction(int SSN, int money){
 	}
 	else {
 		money -= 100;
-		printf("Customer %i has given Cashier %i $100.", SSN, myLine);
+		printf("Customer %i has given Cashier %i $100.\n", SSN, myLine);
 		cashierCV[myLine]->Signal(cashierLock[myLine]);
 		//Wait for clerk to give passport
 		cashierCV[myLine]->Wait(cashierLock[myLine]);
@@ -782,17 +784,17 @@ void PassportClerk(int id){
 			//Do my job - customer waiting
 			if(!(applicationCompletion[customerSSN] == 1 && pictureCompletion[customerSSN] == 1)) {
 				passportPunishment[customerSSN] = 1;
-				printf("PassportClerk %i has determined that Customer %i does not have both their application and picture completed.\n", myLine, identifier);
+				printf("PassportClerk %i has determined that Customer %i does not have both their application and picture completed.\n", myLine, customerSSN);
 				passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
 			}
 			else {
 				passportPunishment[customerSSN] = 0;
-				printf("PassportClerk %i has determined that Customer %i has both their application and picture completed.\n", myLine, identifier);
+				printf("PassportClerk %i has determined that Customer %i has both their application and picture completed.\n", myLine, customerSSN);
 				passportCompletion[customerSSN] = true;
 				//Signal Customer that I'm Done.
 				passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
 				for(int i = 0; i < rand()%81 + 20; i++) { currentThread->Yield(); }
-				printf("PassportClerk %i has recorded Customer %i passport documentation.\n", myLine, identifier);
+				printf("PassportClerk %i has recorded Customer %i passport documentation.\n", myLine, customerSSN);
 			}
 
 			passportClerkLock[myLine]->Release();
@@ -1034,10 +1036,15 @@ void Manager(int id){
 void checkEndOfDay(){
 	managerLock->Acquire();
 	if (checkedOutCount == CUSTOMERCOUNT){
-		//printf("DEBUG: MANAGER: END OF DAY!\n");
+		printf("DEBUG: MANAGER: END OF DAY!\n");
 		//All the customers are gone
 		//Lets all go to sleep
+		THEEND = true;
 		managerLock->Release();
+		//finish all clerk threads
+
+
+
 		currentThread->Finish();
 	}
 	managerLock->Release();
@@ -1099,8 +1106,11 @@ void managerCountMoney(){
 //	printf("Manager has counted a total of $%i for PictureClerks.\n", -1);
 //	printf("Manager has counted a total of $%i for PassportClerks.\n", -1);
 //	printf("Manager has counted a total of $%i for Cashiers.\n", -1);
-//	printf("Manager has counted a total of $%i for the passport office.\n", total);
+	printf("Manager has counted a total of $%i for the passport office.\n", total);
 }
+
+
+
 
 
 //End Manager functions
@@ -1116,57 +1126,207 @@ void managerCountMoney(){
 //This runs the simulation
 void Part2TestSuit(){
 
-	printf("DEBUG: Starting Passport Office Simulation with %i Customers\n", CUSTOMERCOUNT);
+	while (true) {
+		THEEND = false;
+		checkedOutCount = 0;
+		valid = false;
+		while (valid == false) {
+			printf("How many customer threads?\n");
+			scanf("\n%i", &CUSTOMERCOUNT);
+			if (CUSTOMERCOUNT <= 0 || CUSTOMERCOUNT > 50) {
+				printf("That is not a valid value, must be between 1 and 50 \n");
+			}
+			else {
+				valid = true;
+			}
+		}
+		valid = false;
+		while (valid == false) {		
+			printf("How many clerk threads?\n");
+			scanf(" %i", &CLERKCOUNT);
+			if (CLERKCOUNT <= 0 || CLERKCOUNT > 5) {
+				printf("That is not a valid value, must be between 1 and 5 \n");
+			}
+			else {
+				valid = true;
+			}
+		}
+		valid = false;
+		int q;
+		while (valid == false) {
+			printf("How many Senator threads?\n");
+			scanf(" %i", &q);
+			if (q <= 0 || q > 10) {
+				printf("That is not a valid value, must be between 1 and 10\n");
+			}
+			else {
+				valid = true;
+			}
+		}
 
-	//Initialize dynamic variables
-	for(int i = 0; i < CLERKCOUNT; i++){
-		applicationClerkLock.push_back(new Lock("applicationClerkLock" + i));
-		applicationClerkLineCV.push_back(new Condition("applicationClerkLineCV" + i));
-		applicationClerkBribeLineCV.push_back(new Condition("applicationClerkBribeLineCV" + i));
-		applicationClerkCV.push_back(new Condition("applicationClerkCV" + i));
 
-		pictureClerkLock.push_back(new Lock("pictureClerkLock" + i));
-		pictureClerkLineCV.push_back(new Condition("picutreClerkLineCV" + i));
-		pictureClerkBribeLineCV.push_back(new Condition("pictureClerkBribeLineCV" + i));
-		pictureClerkCV.push_back(new Condition("pictureClerkCV" + i));
-
-		passportClerkLock.push_back(new Lock("passportClerkLock" + i));
-		passportClerkLineCV.push_back(new Condition("picutreClerkLineCV" + i));
-		passportClerkBribeLineCV.push_back(new Condition("passportClerkBribeLineCV" + i));
-		passportClerkCV.push_back(new Condition("passportClerkCV" + i));
-
-		cashierLock.push_back(new Lock("cashierLock" + i));
-		cashierLineCV.push_back(new Condition("cashierLineCV" + i));
-		cashierBribeLineCV.push_back(new Condition("cashierBribeLineCV" + i));
-		cashierCV.push_back(new Condition("cashierCV" + i));
-	}
+		printf("DEBUG: Starting Passport Office Simulation with %i Customers and %i Clerks \n", CUSTOMERCOUNT, CLERKCOUNT);
 
 
+		//States
+		applicationClerkState.clear();
+		applicationClerkState.resize(CLERKCOUNT, BUSY);
+		pictureClerkState.clear();
+		pictureClerkState.resize(CLERKCOUNT, BUSY);
+		passportClerkState.clear();
+		passportClerkState.resize(CLERKCOUNT, BUSY);
+		cashierState.clear();
+		cashierState.resize(CLERKCOUNT, BUSY);
+		//LineCounts
+		applicationClerkLineCount.clear();
+		applicationClerkLineCount.resize(CLERKCOUNT, 0);
+		applicationClerkBribeLineCount.clear();
+		applicationClerkBribeLineCount.resize(CLERKCOUNT, 0);
+		pictureClerkLineCount.clear();
+		pictureClerkLineCount.resize(CLERKCOUNT, 0);
+		pictureClerkBribeLineCount.clear();
+		pictureClerkBribeLineCount.resize(CLERKCOUNT, 0);
+		passportClerkLineCount.clear();
+		passportClerkLineCount.resize(CLERKCOUNT, 0);
+		passportClerkBribeLineCount.clear();
+		passportClerkBribeLineCount.resize(CLERKCOUNT, 0);
+		cashierLineCount.clear();
+		cashierLineCount.resize(CLERKCOUNT, 0);
+		cashierBribeLineCount.clear();
+		cashierBribeLineCount.resize(CLERKCOUNT, 0);
+		//Shared Data //Should only be accessed with the corresponding lock / cv
+		applicationClerkSharedData.clear();
+		applicationClerkSharedData.resize(CLERKCOUNT, 0);
+		pictureClerkSharedDataSSN.clear();
+		pictureClerkSharedDataSSN.resize(CLERKCOUNT, 0);
+		pictureClerkSharedDataPicture.clear();
+		pictureClerkSharedDataPicture.resize(CLERKCOUNT, 0);
+		passportClerkSharedDataSSN.clear();
+		passportClerkSharedDataSSN.resize(CLERKCOUNT, 0);
+		applicationCompletion.clear();
+		applicationCompletion.resize(CUSTOMERCOUNT, 0);
+		pictureCompletion.clear();
+		pictureCompletion.resize(CUSTOMERCOUNT, 0);
+		passportCompletion.clear();
+		passportCompletion.resize(CUSTOMERCOUNT, 0);
+		passportPunishment.clear();
+		passportPunishment.resize(CUSTOMERCOUNT, 0);
+		cashierSharedDataSSN.clear();
+		cashierSharedDataSSN.resize(CLERKCOUNT, 0);
+		cashierRejection.clear();
+		cashierRejection.resize(CUSTOMERCOUNT, 0);
+		doneCompletely.clear();
+		doneCompletely.resize(CUSTOMERCOUNT, 0);
 
-	Thread *t;
 
-	for(int i = 0; i < CUSTOMERCOUNT; i++){
-		t = new Thread("Customer " + i);
-		t->Fork(Customer, i);
-	}
-	
-	for(int i = 0; i < CLERKCOUNT; i++){
-		t = new Thread("ApplicationClerk " + i);
-		t->Fork(ApplicationClerk, i);
+		//Initialize dynamic variables
+		for (int i = 0; i < CLERKCOUNT; i++){
+			applicationClerkLock.push_back(new Lock("applicationClerkLock" + i));
+			applicationClerkLineCV.push_back(new Condition("applicationClerkLineCV" + i));
+			applicationClerkBribeLineCV.push_back(new Condition("applicationClerkBribeLineCV" + i));
+			applicationClerkCV.push_back(new Condition("applicationClerkCV" + i));
 
-		t = new Thread("PictureClerk " + i);
-		t->Fork(PictureClerk, i);
+			pictureClerkLock.push_back(new Lock("pictureClerkLock" + i));
+			pictureClerkLineCV.push_back(new Condition("picutreClerkLineCV" + i));
+			pictureClerkBribeLineCV.push_back(new Condition("pictureClerkBribeLineCV" + i));
+			pictureClerkCV.push_back(new Condition("pictureClerkCV" + i));
 
-		t = new Thread("PassportClerk " + i);
-		t->Fork(PassportClerk, i);
+			passportClerkLock.push_back(new Lock("passportClerkLock" + i));
+			passportClerkLineCV.push_back(new Condition("picutreClerkLineCV" + i));
+			passportClerkBribeLineCV.push_back(new Condition("passportClerkBribeLineCV" + i));
+			passportClerkCV.push_back(new Condition("passportClerkCV" + i));
 
-		t = new Thread("Cashier " + i);
-		t->Fork(Cashier, i);
-	}
-	
-	t = new Thread("Manager");
-	t->Fork(Manager, 0);
+			cashierLock.push_back(new Lock("cashierLock" + i));
+			cashierLineCV.push_back(new Condition("cashierLineCV" + i));
+			cashierBribeLineCV.push_back(new Condition("cashierBribeLineCV" + i));
+			cashierCV.push_back(new Condition("cashierCV" + i));
+		}
 
+
+
+		Thread *t;
+
+		for (int i = 0; i < CUSTOMERCOUNT; i++){
+			t = new Thread("Customer " + i);
+			t->Fork(Customer, i);
+		}
+
+		for (int i = 0; i < CLERKCOUNT; i++){
+			t = new Thread("ApplicationClerk " + i);
+			t->Fork(ApplicationClerk, i);
+
+			t = new Thread("PictureClerk " + i);
+			t->Fork(PictureClerk, i);
+
+			t = new Thread("PassportClerk " + i);
+			t->Fork(PassportClerk, i);
+
+			t = new Thread("Cashier " + i);
+			t->Fork(Cashier, i);
+		}
+
+		t = new Thread("Manager");
+		t->Fork(Manager, 0);
+
+
+		while (!THEEND) {
+			currentThread->Yield();
+		}
+
+		char p;
+		printf("Type q to quit, type c to continue to another simulation.\n");
+		scanf(" %c", &p);
+		if (p == 'q') {
+			printf("Have a nice day! \n");
+			return;
+		}
+		else if (p == 'c') {
+			printf("Starting a new simulation. \n");
+		}
+
+		for (int i = 0; i < CLERKCOUNT; i++){
+			delete applicationClerkLock.back();
+			applicationClerkLock.pop_back();
+
+			delete applicationClerkLineCV.back();
+			applicationClerkLineCV.pop_back();
+			delete applicationClerkBribeLineCV.back();
+			applicationClerkBribeLineCV.pop_back();
+			delete applicationClerkCV.back();
+			applicationClerkCV.pop_back();
+
+
+			delete pictureClerkLock.back();
+			pictureClerkLock.pop_back();
+			delete  pictureClerkLineCV.back();
+			pictureClerkLineCV.pop_back();
+			delete  pictureClerkBribeLineCV.back();
+			pictureClerkBribeLineCV.pop_back();
+			delete  pictureClerkCV.back();
+			pictureClerkCV.pop_back();
+			
+			delete passportClerkLock.back();
+			passportClerkLock.pop_back();
+			delete  passportClerkLineCV.back();
+			passportClerkLineCV.pop_back();
+			delete  passportClerkBribeLineCV.back();
+			passportClerkBribeLineCV.pop_back();
+			delete  passportClerkCV.back();
+			passportClerkCV.pop_back();
+			
+			delete cashierLock.back();
+			cashierLock.pop_back();
+			delete cashierLineCV.back();
+			cashierLineCV.pop_back();
+			delete cashierBribeLineCV.back();
+			cashierBribeLineCV.pop_back();
+			delete  cashierCV.back();
+			cashierCV.pop_back();
+		}
+
+
+
+	}//end of true
 }
 
 

@@ -235,6 +235,7 @@ void customerSenatorPresentWaitOutside(int SSN){
 // Checks if a senator is present. Then goes outside if there is.
 // 
 bool customerCheckSenator(int SSN){
+	//printf("DEBUG: Customer %i about to CHECK for senator...\n", SSN);
 	managerLock->Acquire();
 	bool present = senatorPresentWaitOutSide;
 
@@ -661,12 +662,15 @@ void senatorLeavePassportOffice(int SSN){
 
 //This may be necessary to check for race conditions while a senator is waiting outside
 // Before the customer leaves their line the clerk might think they are able to call them
+// This may not be necessary idk
 bool clerkCheckForSenator(){
+	//printf("DEBUG: Clerk bout to check for senator.\n");
 	managerLock->Acquire();
 	if(senatorPresentWaitOutSide && !senatorSafeToEnter){
 		managerLock->Release();
 		//Lets just wait a bit...
-		for(int i = 0; i < rand()%180 + 20; i++) { currentThread->Yield(); }
+		//printf("DEBUG: Clerk yielding for senator.\n");
+		for(int i = 0; i < rand()%780 + 20; i++) { currentThread->Yield(); }
 		return true;
 	}
 	managerLock->Release();
@@ -1234,27 +1238,28 @@ void Manager(int id){
 
 //Wake up customers in all lines
 void managerBroacastLine(std::vector<Condition*> &line, std::vector<Condition*> &bribeLine, Lock* lock, int count){
+	lock->Acquire();
 	for(int i = 0; i < count; i++){
-		lock->Acquire();
 		line[i]->Broadcast(lock);
 		bribeLine[i]->Broadcast(lock);
-		lock->Release();
 	}
+	lock->Release();
 }
 void managerBroadcastCustomerLines(){
 	//Wake up all customers in line//So they can go outside
 
 	//App clerks
 	managerBroacastLine(applicationClerkLineCV, applicationClerkBribeLineCV, applicationClerkLineLock, CLERKCOUNT);
-
+	printf("DEBUG: MANAGER: FINISHED BROADCAST to applicaiton lines.\n");
 	//Picture clerks
 	managerBroacastLine(pictureClerkLineCV, pictureClerkBribeLineCV, pictureClerkLineLock, CLERKCOUNT);
-
+	printf("DEBUG: MANAGER: FINISHED BROADCAST to picture lines.\n");
 	//Passport Clerks
 	managerBroacastLine(passportClerkLineCV, passportClerkBribeLineCV, passportClerkLineLock, CLERKCOUNT);
-
+	printf("DEBUG: MANAGER: FINISHED BROADCAST to passport lines.\n");
 	//Cashiers
 	managerBroacastLine(cashierLineCV, cashierBribeLineCV, cashierLineLock, CLERKCOUNT);
+	printf("DEBUG: MANAGER: FINISHED BROADCAST to cashier lines.\n");
 }
 
 //Checks if a sentor is present...does somehting
@@ -1275,22 +1280,28 @@ void managerSenatorCheck(){
 
 	//See if a senator is waiting in line...
 	if(senatorWaiting){
-		if(!senatorPresentWaitOutSide) printf("DEBUG: MANAGER NOTICED A SENATOR!.\n");
+		if(!senatorPresentWaitOutSide){ printf("DEBUG: MANAGER NOTICED A SENATOR!.\n"); }
 		senatorPresentWaitOutSide = true;
 
 		//Wake up customers in line so they go outside.
-		if(customersInside)
+		if(customersInside){
+			printf("DEBUG: MANAGER CUSTOMER PRESENT COUNT: %i.\n", customersPresentCount);
+			managerLock->Release();
 			managerBroadcastCustomerLines();
+			printf("DEBUG: MANAGER: FINISHED BROADCAST to customers.\n");
+			return;
+		}
 	}
 	
 	if(senatorWaiting && !customersInside){
-		if(!senatorSafeToEnter) printf("DEBUG: MANAGER: SENATORS SAFE TO ENTER.\n");
+		if(true || !senatorSafeToEnter) printf("DEBUG: MANAGER: SENATORS SAFE TO ENTER.\n");
 		senatorSafeToEnter = true;
 		senatorLineCV->Broadcast(managerLock);
+		printf("DEBUG: MANAGER: FINISHED BROADCAST to senators.\n");
 	}
 
 	if(senatorSafeToEnter && !senatorWaiting && !senatorsInside){
-		if(senatorSafeToEnter) printf("DEBUG: SENATORS GONE CUSTOMERS COME BACK IN!.\n");
+		if(senatorSafeToEnter){printf("DEBUG: SENATORS GONE CUSTOMERS COME BACK IN!.\n");}
 		senatorSafeToEnter = false;
 		senatorPresentWaitOutSide = false;
 		passportOfficeOutsideLineCV->Broadcast(managerLock);

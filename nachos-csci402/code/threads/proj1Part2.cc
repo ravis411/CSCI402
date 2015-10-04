@@ -348,21 +348,27 @@ bool customerPictureClerkInteraction(int SSN, int money){
 	}
 	
 	//I must wait in line
-	if(pictureClerkState[myLine] == BUSY){
+	if(pictureClerkState[myLine] != AVAILABLE){
 		if(!bribe){
 			pictureClerkLineCount[myLine]++;
 			printf("Customer %i has gotten in regular line for PictureClerk %i.\n", SSN, myLine);
 			pictureClerkLineCV[myLine]->Wait(pictureClerkLineLock);
 			pictureClerkLineCount[myLine]--;
-			if(customerCheckSenator(SSN))
-				return false;
+			if(pictureClerkState[myLine] != SIGNALEDCUSTOMER){
+				pictureClerkLineLock->Release();
+				if(customerCheckSenator(SSN))
+					return false;
+			}
 		}else{
 			pictureClerkBribeLineCount[myLine]++;
 			printf("Customer %i has gotten in bribe line for PictureClerk %i.\n", SSN, myLine);
 			pictureClerkBribeLineCV[myLine]->Wait(pictureClerkLineLock);
 			pictureClerkBribeLineCount[myLine]--;
-			if(customerCheckSenator(SSN))
-				return false;
+			if(pictureClerkState[myLine] != SIGNALEDCUSTOMER){
+				pictureClerkLineLock->Release();
+				if(customerCheckSenator(SSN))
+					return false;
+			}
 			money -= 500;
 		}
 	}
@@ -416,21 +422,27 @@ bool customerPassportClerkInteraction(int SSN, int money){
 		myLine = pickShortestLine(passportClerkBribeLineCount, passportClerkState);
 	}
 	//I must wait in line
-	if(passportClerkState[myLine] == BUSY){
+	if(passportClerkState[myLine] != AVAILABLE){
 		if(!bribe){
 			passportClerkLineCount[myLine]++;
 			printf("Customer %i has gotten in regular line for PassportClerk %i.\n", SSN, myLine);
 			passportClerkLineCV[myLine]->Wait(passportClerkLineLock);
 			passportClerkLineCount[myLine]--;
-			if(customerCheckSenator(SSN))
-				return false;
+			if(passportClerkState[myLine] != SIGNALEDCUSTOMER){
+				passportClerkLineLock->Release();
+				if(customerCheckSenator(SSN))
+					return false;
+			}
 		}else{
 			passportClerkBribeLineCount[myLine]++;
 			printf("Customer %i has gotten in bribe line for PassportClerk %i.\n", SSN, myLine);
 			passportClerkBribeLineCV[myLine]->Wait(passportClerkLineLock);
 			passportClerkBribeLineCount[myLine]--;
-			if(customerCheckSenator(SSN))
-				return false;
+			if(passportClerkState[myLine] != SIGNALEDCUSTOMER){
+				passportClerkLineLock->Release();
+				if(customerCheckSenator(SSN))
+					return false;
+			}
 			money -= 500;
 		}
 	}
@@ -478,21 +490,27 @@ bool customerCashierInteraction(int SSN, int money){
 	}
 	
 	//I must wait in line
-	if(cashierState[myLine] == BUSY){
+	if(cashierState[myLine] != AVAILABLE){
 		if(!bribe){
 			cashierLineCount[myLine]++;
 			printf("Customer %i has gotten in regular line for Cashier %i.\n", SSN, myLine);
 			cashierLineCV[myLine]->Wait(cashierLineLock);
 			cashierLineCount[myLine]--;
-			if(customerCheckSenator(SSN))
-				return false;
+			if(cashierState[myLine] != SIGNALEDCUSTOMER){
+				cashierLineLock->Release();
+				if(customerCheckSenator(SSN))
+					return false;
+			}
 		}else{
 			cashierBribeLineCount[myLine]++;
 			printf("Customer %i has gotten in bribe line for Cashier %i.\n", SSN, myLine);
 			cashierBribeLineCV[myLine]->Wait(cashierLineLock);
 			cashierBribeLineCount[myLine]--;
-			if(customerCheckSenator(SSN))
-				return false;
+			if(cashierState[myLine] != SIGNALEDCUSTOMER){
+				cashierLineLock->Release();
+				if(customerCheckSenator(SSN))
+					return false;
+			}
 			money -= 500;
 			
 		}
@@ -563,6 +581,9 @@ void Senator(int id){
 	//Safe to do 'normal' interactions now....
 	//TODO: Should be able to use the customer...Interactions 
 
+	for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); }
+
+
 	//Done lets leave
 	senatorLeavePassportOffice(SSN);
 
@@ -608,7 +629,7 @@ void senatorLeavePassportOffice(int SSN){
 	senatorPresentCount--;
 	checkedOutCount++;
 	managerLock->Release();
-	printf("Senator %i is leaving the Passport Office.", SSN);
+	printf("Senator %i is leaving the Passport Office.\n", SSN);
 }
 
 
@@ -645,7 +666,7 @@ bool clerkCheckForSenator(){
 	if(senatorPresentWaitOutSide && !senatorSafeToEnter){
 		managerLock->Release();
 		//Lets just wait a bit...
-		currentThread->Yield();
+		for(int i = 0; i < rand()%180 + 20; i++) { currentThread->Yield(); }
 		return true;
 	}
 	managerLock->Release();
@@ -762,7 +783,7 @@ void applicationClerkcheckAndGoOnBreak(int myLine){
 		applicationClerkLineLock->Release();
 		//Should we go to sleep?
 		managerLock->Acquire();//Do we really need to acquire a lock for this?
-		if(checkedOutCount == CUSTOMERCOUNT){managerLock->Release(); currentThread->Finish();}
+		if(checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){managerLock->Release(); currentThread->Finish();}
 		managerLock->Release();//Guess not
 		currentThread->Yield();
 		applicationClerkLineLock->Acquire();
@@ -804,11 +825,11 @@ void PictureClerk(int id){
 			if(pictureClerkBribeLineCount[myLine] > 0){
 				customerFromLine = 1;
 				pictureClerkBribeLineCV[myLine]->Signal(pictureClerkLineLock);
-				pictureClerkState[myLine] = BUSY;
+				pictureClerkState[myLine] = SIGNALEDCUSTOMER;
 			}else if(pictureClerkLineCount[myLine] > 0){//if there is someone in my regular line
 				customerFromLine = 2;
 				pictureClerkLineCV[myLine]->Signal(pictureClerkLineLock);
-				pictureClerkState[myLine] = BUSY;
+				pictureClerkState[myLine] = SIGNALEDCUSTOMER;
 			}else{
 				//Go on a break!
 				customerFromLine = 0;
@@ -886,7 +907,7 @@ void pictureClerkcheckAndGoOnBreak(int myLine){
 		pictureClerkLineLock->Release();
 		//Should we GO TO SLEEP?
 		managerLock->Acquire();//Do we really need to acquire a lock for this?
-		if(checkedOutCount == CUSTOMERCOUNT){managerLock->Release(); currentThread->Finish();}
+		if(checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){managerLock->Release(); currentThread->Finish();}
 		managerLock->Release();//Guess not
 		currentThread->Yield();
 		pictureClerkLineLock->Acquire();
@@ -926,11 +947,11 @@ void PassportClerk(int id){
 		if(passportClerkBribeLineCount[myLine] > 0){
 			customerFromLine = 1;
 			passportClerkBribeLineCV[myLine]->Signal(passportClerkLineLock);
-			passportClerkState[myLine] = BUSY;
+			passportClerkState[myLine] = SIGNALEDCUSTOMER;
 		}else if(passportClerkLineCount[myLine] > 0){//if there is someone in my regular line
 			customerFromLine = 2;
 			passportClerkLineCV[myLine]->Signal(passportClerkLineLock);
-			passportClerkState[myLine] = BUSY;
+			passportClerkState[myLine] = SIGNALEDCUSTOMER;
 		}else{
 			customerFromLine = 0;
 			passportClerkcheckAndGoOnBreak(myLine);
@@ -1010,7 +1031,7 @@ void passportClerkcheckAndGoOnBreak(int myLine){
 		passportClerkLineLock->Release();
 		//Should we go to sleep?
 		managerLock->Acquire();//Do we really need to acquire a lock for this?
-		if(checkedOutCount == CUSTOMERCOUNT){managerLock->Release(); currentThread->Finish();}
+		if(checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){managerLock->Release(); currentThread->Finish();}
 		managerLock->Release();//Guess not
 		currentThread->Yield();
 		passportClerkLineLock->Acquire();
@@ -1058,12 +1079,12 @@ void Cashier(int id){
 		if (cashierBribeLineCount[myLine] > 0){
 			customerFromLine = 1;
 			cashierBribeLineCV[myLine]->Signal(cashierLineLock);
-			cashierState[myLine] = BUSY;
+			cashierState[myLine] = SIGNALEDCUSTOMER;
 		}
 		else if (cashierLineCount[myLine] > 0){//if there is someone in my regular line
 			customerFromLine = 2;
 			cashierLineCV[myLine]->Signal(cashierLineLock);
-			cashierState[myLine] = BUSY;
+			cashierState[myLine] = SIGNALEDCUSTOMER;
 		}
 		else{
 			customerFromLine = 0;
@@ -1156,7 +1177,7 @@ void cashiercheckAndGoOnBreak(int myLine){
 		cashierLineLock->Release();
 		//Should we go to sleep?//Check end of day
 		managerLock->Acquire();//Do we really need to acquire a lock for this?
-		if(checkedOutCount == CUSTOMERCOUNT){managerLock->Release(); currentThread->Finish();}
+		if(checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){managerLock->Release(); currentThread->Finish();}
 		managerLock->Release();//Guess not
 		currentThread->Yield();
 		cashierLineLock->Acquire();
@@ -1217,7 +1238,7 @@ void managerBroacastLine(std::vector<Condition*> &line, std::vector<Condition*> 
 		lock->Acquire();
 		line[i]->Broadcast(lock);
 		bribeLine[i]->Broadcast(lock);
-		lock->Acquire();
+		lock->Release();
 	}
 }
 void managerBroadcastCustomerLines(){
@@ -1268,7 +1289,7 @@ void managerSenatorCheck(){
 		senatorLineCV->Broadcast(managerLock);
 	}
 
-	if(!senatorWaiting && !senatorsInside){
+	if(senatorSafeToEnter && !senatorWaiting && !senatorsInside){
 		if(senatorSafeToEnter) printf("DEBUG: SENATORS GONE CUSTOMERS COME BACK IN!.\n");
 		senatorSafeToEnter = false;
 		senatorPresentWaitOutSide = false;

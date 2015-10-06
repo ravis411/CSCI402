@@ -8,6 +8,7 @@
 #include "synch.h"
 #include "list.h"
 #include "vector"
+#include "utility.h"
 #include <stdlib.h> 
 
 //Settings Variables 
@@ -235,7 +236,7 @@ void customerSenatorPresentWaitOutside(int SSN){
 // Checks if a senator is present. Then goes outside if there is.
 // 
 bool customerCheckSenator(int SSN){
-	//printf("DEBUG: Customer %i about to CHECK for senator...\n", SSN);
+	//DEBUG('s', "DEBUG: Customer %i about to CHECK for senator...\n", SSN);
 	managerLock->Acquire();
 	bool present = senatorPresentWaitOutSide;
 
@@ -337,6 +338,7 @@ bool customerPictureClerkInteraction(int SSN, int money){
 
 	//I should acquire the line lock
 	pictureClerkLineLock->Acquire();
+	DEBUG('p', "DEBUG: Customer %i pICTURECLERKLINELOCK acquired\n", myLine);
 	//lock acquired
 
 	//Can I go to counter, or have to wait? Should i bribe?
@@ -357,6 +359,7 @@ bool customerPictureClerkInteraction(int SSN, int money){
 			pictureClerkLineCount[myLine]--;
 			if(pictureClerkState[myLine] != SIGNALEDCUSTOMER){
 				pictureClerkLineLock->Release();
+				DEBUG('p', "DEBUG: Customer %i pICTURECLERKLINELOCK released\n", myLine);
 				if(customerCheckSenator(SSN))
 					return false;
 			}
@@ -367,6 +370,7 @@ bool customerPictureClerkInteraction(int SSN, int money){
 			pictureClerkBribeLineCount[myLine]--;
 			if(pictureClerkState[myLine] != SIGNALEDCUSTOMER){
 				pictureClerkLineLock->Release();
+				DEBUG('p', "DEBUG: Customer %i pICTURECLERKLINELOCK released\n", myLine);
 				if(customerCheckSenator(SSN))
 					return false;
 			}
@@ -376,6 +380,7 @@ bool customerPictureClerkInteraction(int SSN, int money){
 	//Clerk is AVAILABLE
 	pictureClerkState[myLine] = BUSY;
 	pictureClerkLineLock->Release();
+	DEBUG('p', "DEBUG: Customer %i pICTURECLERKLINELOCK released\n", myLine);
 	//Lets talk to clerk
 	pictureClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
@@ -664,7 +669,7 @@ void senatorLeavePassportOffice(int SSN){
 // Before the customer leaves their line the clerk might think they are able to call them
 // This may not be necessary idk
 bool clerkCheckForSenator(){
-	//printf("DEBUG: Clerk bout to check for senator.\n");
+	//DEBUG('s', "DEBUG: Clerk bout to check for senator.\n");
 	managerLock->Acquire();
 	if(senatorPresentWaitOutSide && !senatorSafeToEnter){
 		managerLock->Release();
@@ -724,6 +729,7 @@ void ApplicationClerk(int id){
 			//Go on break if there is another clerk
 			customerFromLine = 0;
 			applicationClerkcheckAndGoOnBreak(myLine);
+			applicationClerkLineLock->Release();
 		}
 
 		//Should only do this when we have a customer...
@@ -824,6 +830,7 @@ void PictureClerk(int id){
 			if(clerkCheckForSenator()) continue; //Waiting for senators to enter just continue.
 
 			pictureClerkLineLock->Acquire();
+			DEBUG('p', "DEBUG: PictureClerk %i pICTURECLERKLINELOCK acquired top of while\n", myLine);
 
 			//If there is someone in my bribe line
 			if(pictureClerkBribeLineCount[myLine] > 0){
@@ -838,6 +845,8 @@ void PictureClerk(int id){
 				//Go on a break!
 				customerFromLine = 0;
 				pictureClerkcheckAndGoOnBreak(myLine);
+				pictureClerkLineLock->Release();
+				DEBUG('p', "DEBUG: PictureClerk %i pICTURECLERKLINELOCK released after checkbreak.\n", myLine);
 			}
 
 			//Should only do this when we are BUSY? We have a customer...
@@ -846,6 +855,7 @@ void PictureClerk(int id){
 				pictureClerkLock[myLine]->Acquire();
 			//	pictureClerkSharedDataPicture[myLine] = 0;
 				pictureClerkLineLock->Release();
+				DEBUG('p', "DEBUG: PictureClerk %i pICTURECLERKLINELOCK released after signalling customer.\n", myLine);
 				//wait for customer data
 				pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 				//Customer Has given me their SSN?
@@ -909,12 +919,15 @@ void pictureClerkcheckAndGoOnBreak(int myLine){
 		//If everyone is on break...
 		//applicationClerkState[myLine] = AVAILABLE;
 		pictureClerkLineLock->Release();
+		DEBUG('p', "DEBUG: PictureClerk %i pICTURECLERKLINELOCK released middle of checkbreak\n", myLine);
 		//Should we GO TO SLEEP?
 		managerLock->Acquire();//Do we really need to acquire a lock for this?
 		if(checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){managerLock->Release(); currentThread->Finish();}
 		managerLock->Release();//Guess not
 		currentThread->Yield();
 		pictureClerkLineLock->Acquire();
+		DEBUG('p', "DEBUG: PictureClerk %i pICTURECLERKLINELOCK acquired end of checkbreak\n", myLine);
+
 	}
 	//applicationClerkState[myLine] = AVAILABLE;
 }
@@ -959,6 +972,7 @@ void PassportClerk(int id){
 		}else{
 			customerFromLine = 0;
 			passportClerkcheckAndGoOnBreak(myLine);
+			passportClerkLineLock->Release();
 		}
 
 		//Should only do this when we are BUSY? We have a customer...
@@ -1093,6 +1107,7 @@ void Cashier(int id){
 		else{
 			customerFromLine = 0;
 			cashiercheckAndGoOnBreak(myLine);
+			cashierLineLock->Release();
 		}
 
 		//Should only do this when we are BUSY? We have a customer...
@@ -1238,28 +1253,31 @@ void Manager(int id){
 
 //Wake up customers in all lines
 void managerBroacastLine(std::vector<Condition*> &line, std::vector<Condition*> &bribeLine, Lock* lock, int count){
+	DEBUG('s', "DEBUG: MANAGER: BROADCAST acquiring lock %s.\n", lock->getName());
 	lock->Acquire();
+	DEBUG('s', "DEBUG: MANAGER: BROADCAST acquired lock %s.\n", lock->getName());
 	for(int i = 0; i < count; i++){
 		line[i]->Broadcast(lock);
 		bribeLine[i]->Broadcast(lock);
 	}
 	lock->Release();
+	DEBUG('s', "DEBUG: MANAGER: BROADCAST released lock %s.\n", lock->getName());
 }
 void managerBroadcastCustomerLines(){
 	//Wake up all customers in line//So they can go outside
 
 	//App clerks
 	managerBroacastLine(applicationClerkLineCV, applicationClerkBribeLineCV, applicationClerkLineLock, CLERKCOUNT);
-	printf("DEBUG: MANAGER: FINISHED BROADCAST to applicaiton lines.\n");
+	DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to applicaiton lines.\n");
 	//Picture clerks
 	managerBroacastLine(pictureClerkLineCV, pictureClerkBribeLineCV, pictureClerkLineLock, CLERKCOUNT);
-	printf("DEBUG: MANAGER: FINISHED BROADCAST to picture lines.\n");
+	DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to picture lines.\n");
 	//Passport Clerks
 	managerBroacastLine(passportClerkLineCV, passportClerkBribeLineCV, passportClerkLineLock, CLERKCOUNT);
-	printf("DEBUG: MANAGER: FINISHED BROADCAST to passport lines.\n");
+	DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to passport lines.\n");
 	//Cashiers
 	managerBroacastLine(cashierLineCV, cashierBribeLineCV, cashierLineLock, CLERKCOUNT);
-	printf("DEBUG: MANAGER: FINISHED BROADCAST to cashier lines.\n");
+	DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to cashier lines.\n");
 }
 
 //Checks if a sentor is present...does somehting
@@ -1280,28 +1298,28 @@ void managerSenatorCheck(){
 
 	//See if a senator is waiting in line...
 	if(senatorWaiting){
-		if(!senatorPresentWaitOutSide){ printf("DEBUG: MANAGER NOTICED A SENATOR!.\n"); }
+		if(!senatorPresentWaitOutSide){ DEBUG('s', "DEBUG: MANAGER NOTICED A SENATOR!.\n"); }
 		senatorPresentWaitOutSide = true;
 
 		//Wake up customers in line so they go outside.
 		if(customersInside){
-			printf("DEBUG: MANAGER CUSTOMER PRESENT COUNT: %i.\n", customersPresentCount);
+			DEBUG('s', "DEBUG: MANAGER CUSTOMER PRESENT COUNT: %i.\n", customersPresentCount);
 			managerLock->Release();
 			managerBroadcastCustomerLines();
-			printf("DEBUG: MANAGER: FINISHED BROADCAST to customers.\n");
+			DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to customers.\n");
 			return;
 		}
 	}
 	
 	if(senatorWaiting && !customersInside){
-		if(true || !senatorSafeToEnter) printf("DEBUG: MANAGER: SENATORS SAFE TO ENTER.\n");
+		if(true || !senatorSafeToEnter) DEBUG('s', "DEBUG: MANAGER: SENATORS SAFE TO ENTER.\n");
 		senatorSafeToEnter = true;
 		senatorLineCV->Broadcast(managerLock);
-		printf("DEBUG: MANAGER: FINISHED BROADCAST to senators.\n");
+		DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to senators.\n");
 	}
 
 	if(senatorSafeToEnter && !senatorWaiting && !senatorsInside){
-		if(senatorSafeToEnter){printf("DEBUG: SENATORS GONE CUSTOMERS COME BACK IN!.\n");}
+		if(senatorSafeToEnter){DEBUG('s', "DEBUG: SENATORS GONE CUSTOMERS COME BACK IN!.\n");}
 		senatorSafeToEnter = false;
 		senatorPresentWaitOutSide = false;
 		passportOfficeOutsideLineCV->Broadcast(managerLock);
@@ -1316,7 +1334,7 @@ void managerSenatorCheck(){
 void checkEndOfDay(){
 	managerLock->Acquire();
 	if (checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){
-		//printf("DEBUG: MANAGER: END OF DAY!\n");
+		//DEBUG('s', "DEBUG: MANAGER: END OF DAY!\n");
 		//All the customers are gone
 		//Lets all go to sleep
 		managerLock->Release();

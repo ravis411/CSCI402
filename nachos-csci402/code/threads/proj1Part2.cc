@@ -181,21 +181,12 @@ void Customer(int id){
 			pictureClerkDone = customerPictureClerkInteraction(SSN, money);
 		}
 		else if(!passportClerkDone){
-			/*while(passportCompletion[SSN] == 0) {
-					if (customerPassportClerkInteraction(SSN, money) == 0) {
-						for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); }
-					}
-
-			}*/
 			passportClerkDone = customerPassportClerkInteraction(SSN, money);
+			if (!passportClerkDone) { for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }
 		}
 		else if(!cashierDone){
-			/*while(doneCompletely[SSN] == 0) {
-				if (customerCashierInteraction(SSN, money) == 0) {
-					for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); }
-				}
-			}*/
 			cashierDone = customerCashierInteraction(SSN, money);
+			if (!cashierDone) {	for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }
 		}
 		else{
 			//This terminates the customer should go at end.
@@ -1455,11 +1446,10 @@ void Part2TestSuit(){
 			}
 		}
 		valid = false;
-		int q;
 		while (valid == false) {
 			printf("How many Senator threads?\n");
-			scanf(" %i", &q);
-			if (q <= 0 || q > 10) {
+			scanf("%i", &SENATORCOUNT);
+			if (SENATORCOUNT <= 0 || SENATORCOUNT > 10) {
 				printf("That is not a valid value, must be between 1 and 10\n");
 			}
 			else {

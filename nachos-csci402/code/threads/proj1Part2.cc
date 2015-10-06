@@ -25,6 +25,8 @@ bool THEEND = false;
 
 //Globals or constants
 enum CLERKSTATE {AVAILABLE, SIGNALEDCUSTOMER, BUSY, ONBREAK};				//enum for the CLERKSTATE
+char CUSTOMERTEXT[] = "Customer";
+char SENATORTEXT[] = "Senator";
 
 ///////////////////////////////////
 // Locks, CVS, and Monitors?
@@ -124,6 +126,17 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 	return myLine;	//This is the shortest line
 }//End pickShortestLine
 
+//Used by customerInteractions to return customer/senator text...
+char* MYTYPE(int VIP){
+	if(VIP == 0){
+		return CUSTOMERTEXT;
+	}else if(VIP == 1){
+		return SENATORTEXT;
+	}else{
+		return NULL;
+	}
+}
+
 //End Utility Functions
 
 
@@ -147,10 +160,10 @@ int pickShortestLine(std::vector<int>& pickShortestlineCount, std::vector<CLERKS
 	// Customer who can pay move in front of any Customer that has not paid. 
 	// HOWEVER, they do not move in front of any Customer that has also paid. 
 	// Customer money is to be deterined randomly, in increments of $100, $600, $1100, and $1600.
-bool customerApplicationClerkInteraction(int SSN, int &money);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
-bool customerPictureClerkInteraction(int SSN, int money);
-bool customerPassportClerkInteraction(int SSN, int money);
-bool customerCashierInteraction(int SSN, int money);
+bool customerApplicationClerkInteraction(int SSN, int &money, int VIP = 0);//forward declaration//prolly not cleaner like this just thought it would be nice to implement after the main Customer thread.
+bool customerPictureClerkInteraction(int SSN, int &money, int VIP = 0);
+bool customerPassportClerkInteraction(int SSN, int &money, int VIP = 0);
+bool customerCashierInteraction(int SSN, int &money, int VIP = 0);
 void customerCheckIn();
 bool customerCheckSenator(int SSN);
 void customerCheckIn(int SSN);
@@ -258,11 +271,35 @@ void customerCheckOut(int SSN){
 	currentThread->Finish();
 }
 
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+//
+//	customer/senator - Clerk Interactions
+//
+/////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
 //The Customer's Interaction with the applicationClerk
 //    Get their application accepted by the ApplicationClerk
-bool customerApplicationClerkInteraction(int SSN, int &money){
+bool customerApplicationClerkInteraction(int SSN, int &money, int VIP){
 	int myLine = -1;
-	bool bribe = (money > 500) && (rand()%2);
+	char* myType = MYTYPE(VIP);
+	bool bribe = (money > 500) && (rand()%2) && !VIP;//VIPS dont bribe...
 	//I have decided to go to the applicationClerk
 
 	//I should acquire the line lock
@@ -282,7 +319,7 @@ bool customerApplicationClerkInteraction(int SSN, int &money){
 	if(applicationClerkState[myLine] != AVAILABLE){
 		if(!bribe){
 			applicationClerkLineCount[myLine]++;
-			printf("Customer %i has gotten in regular line for ApplicationClerk %i.\n", SSN, myLine);
+			printf("%s %i has gotten in regular line for ApplicationClerk %i.\n", myType, SSN, myLine);
 			applicationClerkLineCV[myLine]->Wait(applicationClerkLineLock);
 			applicationClerkLineCount[myLine]--;
 			//See if the clerk for my line signalled me, otherwise check if a senator is here and go outside.
@@ -293,7 +330,7 @@ bool customerApplicationClerkInteraction(int SSN, int &money){
 			}
 		}else{
 			applicationClerkBribeLineCount[myLine]++;
-			printf("Customer %i has gotten in bribe line for ApplicationClerk %i.\n", SSN, myLine);
+			printf("%s %i has gotten in bribe line for ApplicationClerk %i.\n", myType, SSN, myLine);
 			applicationClerkBribeLineCV[myLine]->Wait(applicationClerkLineLock);
 			applicationClerkBribeLineCount[myLine]--;
 			//See if the clerk for my line signalled me, otherwise check if a senator is here and go outside.
@@ -313,7 +350,7 @@ bool customerApplicationClerkInteraction(int SSN, int &money){
 	//Give my data to my clerk
 	//We already have a lock so put my SSN in applicationClerkSharedData
 	applicationClerkSharedData[myLine] = SSN;
-	printf("Customer %i has given SSN %i to ApplicationClerk %i.\n", SSN, SSN, myLine);
+	printf("%s %i has given SSN %i to ApplicationClerk %i.\n", myType, SSN, SSN, myLine);
 	applicationClerkCV[myLine]->Signal(applicationClerkLock[myLine]);
 	//Wait for clerk to do their job
 	applicationClerkCV[myLine]->Wait(applicationClerkLock[myLine]);
@@ -327,13 +364,13 @@ bool customerApplicationClerkInteraction(int SSN, int &money){
 
 //The Customer's Interaction with the pictureClerk
 //Get their picture accepted by the pictureClerk
-bool customerPictureClerkInteraction(int SSN, int money){
+bool customerPictureClerkInteraction(int SSN, int &money, int VIP){
 	int myLine = -1;
-	bool bribe = (money > 500) && (rand()%2);
+	char* myType = MYTYPE(VIP);
+	bool bribe = (money > 500) && (rand()%2) && !VIP;
 
 	//I should acquire the line lock
 	pictureClerkLineLock->Acquire();
-	DEBUG('p', "DEBUG: Customer %i pICTURECLERKLINELOCK acquired\n", myLine);
 	//lock acquired
 
 	//Can I go to counter, or have to wait? Should i bribe?
@@ -349,23 +386,21 @@ bool customerPictureClerkInteraction(int SSN, int money){
 	if(pictureClerkState[myLine] != AVAILABLE){
 		if(!bribe){
 			pictureClerkLineCount[myLine]++;
-			printf("Customer %i has gotten in regular line for PictureClerk %i.\n", SSN, myLine);
+			printf("%s %i has gotten in regular line for PictureClerk %i.\n", myType, SSN, myLine);
 			pictureClerkLineCV[myLine]->Wait(pictureClerkLineLock);
 			pictureClerkLineCount[myLine]--;
 			if(pictureClerkState[myLine] != SIGNALEDCUSTOMER){
 				pictureClerkLineLock->Release();
-				DEBUG('p', "DEBUG: Customer %i pICTURECLERKLINELOCK released\n", myLine);
 				if(customerCheckSenator(SSN))
 					return false;
 			}
 		}else{
 			pictureClerkBribeLineCount[myLine]++;
-			printf("Customer %i has gotten in bribe line for PictureClerk %i.\n", SSN, myLine);
+			printf("%s %i has gotten in bribe line for PictureClerk %i.\n", myType, SSN, myLine);
 			pictureClerkBribeLineCV[myLine]->Wait(pictureClerkLineLock);
 			pictureClerkBribeLineCount[myLine]--;
 			if(pictureClerkState[myLine] != SIGNALEDCUSTOMER){
 				pictureClerkLineLock->Release();
-				DEBUG('p', "DEBUG: Customer %i pICTURECLERKLINELOCK released\n", myLine);
 				if(customerCheckSenator(SSN))
 					return false;
 			}
@@ -375,13 +410,12 @@ bool customerPictureClerkInteraction(int SSN, int money){
 	//Clerk is AVAILABLE
 	pictureClerkState[myLine] = BUSY;
 	pictureClerkLineLock->Release();
-	DEBUG('p', "DEBUG: Customer %i pICTURECLERKLINELOCK released\n", myLine);
 	//Lets talk to clerk
 	pictureClerkLock[myLine]->Acquire();
 	//Give my data to my clerk
 	//We already have a lock so put my SSN in pictureClerkSharedData
 	pictureClerkSharedDataSSN[myLine] = SSN;
-	printf("Customer %i has given SSN %i to PictureClerk %i.\n", SSN, SSN, myLine);
+	printf("%s %i has given SSN %i to PictureClerk %i.\n", myType, SSN, SSN, myLine);
 
 
 	pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
@@ -389,14 +423,14 @@ bool customerPictureClerkInteraction(int SSN, int money){
 	//Wait for clerk to take the picture
 	while(pictureClerkSharedDataPicture[myLine] == 0) {
 		if(rand()%10 > 7) {
-			printf("Customer %i does not like their picture from PictureClerk %i.\n", SSN, myLine);
+			printf("%s %i does not like their picture from PictureClerk %i.\n", myType, SSN, myLine);
 			pictureClerkSharedDataPicture[myLine] = 0;
 			pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 			//Wait for clerk to take the picture
 			pictureClerkCV[myLine]->Wait(pictureClerkLock[myLine]);
 		}
 		else {
-			printf("Customer %i does like their picture from PictureClerk %i.\n", SSN, myLine);
+			printf("%s %i does like their picture from PictureClerk %i.\n", myType, SSN, myLine);
 			pictureClerkSharedDataPicture[myLine] = 1;
 			pictureClerkCV[myLine]->Signal(pictureClerkLock[myLine]);
 			//Wait for clerk to take the picture
@@ -408,9 +442,10 @@ bool customerPictureClerkInteraction(int SSN, int money){
 	return true;
 }//End customerPictureClerkInteraction
 
-bool customerPassportClerkInteraction(int SSN, int money){
+bool customerPassportClerkInteraction(int SSN, int &money, int VIP){
 	int myLine = -1;
-	bool bribe = (money > 500) && (rand()%2);
+	char* myType = MYTYPE(VIP);
+	bool bribe = (money > 500) && (rand()%2) && !VIP;
 	//I should acquire the line lock
 	passportClerkLineLock->Acquire();
 	//lock acquired
@@ -426,7 +461,7 @@ bool customerPassportClerkInteraction(int SSN, int money){
 	if(passportClerkState[myLine] != AVAILABLE){
 		if(!bribe){
 			passportClerkLineCount[myLine]++;
-			printf("Customer %i has gotten in regular line for PassportClerk %i.\n", SSN, myLine);
+			printf("%s %i has gotten in regular line for PassportClerk %i.\n", myType, SSN, myLine);
 			passportClerkLineCV[myLine]->Wait(passportClerkLineLock);
 			passportClerkLineCount[myLine]--;
 			if(passportClerkState[myLine] != SIGNALEDCUSTOMER){
@@ -436,7 +471,7 @@ bool customerPassportClerkInteraction(int SSN, int money){
 			}
 		}else{
 			passportClerkBribeLineCount[myLine]++;
-			printf("Customer %i has gotten in bribe line for PassportClerk %i.\n", SSN, myLine);
+			printf("%s %i has gotten in bribe line for PassportClerk %i.\n", myType, SSN, myLine);
 			passportClerkBribeLineCV[myLine]->Wait(passportClerkLineLock);
 			passportClerkBribeLineCount[myLine]--;
 			if(passportClerkState[myLine] != SIGNALEDCUSTOMER){
@@ -456,12 +491,12 @@ bool customerPassportClerkInteraction(int SSN, int money){
 	//Give my data to my clerk
 	//We already have a lock so put my SSN in passportClerkSharedData
 	passportClerkSharedDataSSN[myLine] = SSN;
-	printf("Customer %i has given SSN %i to PassportClerk %i.\n", SSN, SSN, myLine);
+	printf("%s %i has given SSN %i to PassportClerk %i.\n", myType, SSN, SSN, myLine);
 	passportClerkCV[myLine]->Signal(passportClerkLock[myLine]);
 	//Wait for clerk to do their job
 	passportClerkCV[myLine]->Wait(passportClerkLock[myLine]);
 	if(passportPunishment[SSN] == 1) {
-		printf("Customer %i has gone to PassportClerk %i too soon. They are going to the back of the line.\n", SSN, myLine);
+		printf("%s %i has gone to PassportClerk %i too soon. They are going to the back of the line.\n", myType, SSN, myLine);
 		passportClerkLock[myLine]->Release();
 		return false;
 	}
@@ -473,9 +508,10 @@ bool customerPassportClerkInteraction(int SSN, int money){
 }//End of customerPassportClerkInteraction
 
 
-bool customerCashierInteraction(int SSN, int money){
+bool customerCashierInteraction(int SSN, int &money, int VIP){
 	int myLine = -1;
-	bool bribe = (money > 500) && (rand()%2);
+	char* myType = MYTYPE(VIP);
+	bool bribe = (money > 500) && (rand()%2) && !VIP;
 
 	//I should acquire the line lock
 	cashierLineLock->Acquire();
@@ -494,7 +530,7 @@ bool customerCashierInteraction(int SSN, int money){
 	if(cashierState[myLine] != AVAILABLE){
 		if(!bribe){
 			cashierLineCount[myLine]++;
-			printf("Customer %i has gotten in regular line for Cashier %i.\n", SSN, myLine);
+			printf("%s %i has gotten in regular line for Cashier %i.\n", myType, SSN, myLine);
 			cashierLineCV[myLine]->Wait(cashierLineLock);
 			cashierLineCount[myLine]--;
 			if(cashierState[myLine] != SIGNALEDCUSTOMER){
@@ -504,7 +540,7 @@ bool customerCashierInteraction(int SSN, int money){
 			}
 		}else{
 			cashierBribeLineCount[myLine]++;
-			printf("Customer %i has gotten in bribe line for Cashier %i.\n", SSN, myLine);
+			printf("%s %i has gotten in bribe line for Cashier %i.\n", myType, SSN, myLine);
 			cashierBribeLineCV[myLine]->Wait(cashierLineLock);
 			cashierBribeLineCount[myLine]--;
 			if(cashierState[myLine] != SIGNALEDCUSTOMER){
@@ -525,19 +561,19 @@ bool customerCashierInteraction(int SSN, int money){
 	//Give my data to my clerk
 	//We already have a lock so put my SSN in cashierSharedData
 	cashierSharedDataSSN[myLine] = SSN;
-	printf("Customer %i has given SSN %i to Cashier %i.\n", SSN, SSN, myLine);
+	printf("%s %i has given SSN %i to Cashier %i.\n", myType, SSN, SSN, myLine);
 	cashierCV[myLine]->Signal(cashierLock[myLine]);
 	//Wait for clerk check completion
 	cashierCV[myLine]->Wait(cashierLock[myLine]);
 
 	if (cashierRejection[SSN] == 1) {
-		printf("Customer %i has gone to Cashier %i too soon. They are going to the back of the line.\n", SSN, myLine);
+		printf("%s %i has gone to Cashier %i too soon. They are going to the back of the line.\n", myType, SSN, myLine);
 		cashierLock[myLine]->Release();
 		return false;
 	}
 	else {
 		money -= 100;
-		printf("Customer %i has given Cashier %i $100.\n", SSN, myLine);
+		printf("%s %i has given Cashier %i $100.\n", myType, SSN, myLine);
 		cashierCV[myLine]->Signal(cashierLock[myLine]);
 		//Wait for clerk to give passport
 		cashierCV[myLine]->Wait(cashierLock[myLine]);
@@ -575,19 +611,41 @@ void senatorLeavePassportOffice(int SSN);
 void Senator(int id){
 	int SSN = id;
 	int myLine = -1;
+	int money = (rand()%4)*500 + 100;
+	bool appClerkDone = false; //State vars
+	bool pictureClerkDone = false;
+	bool passportClerkDone = false;
+	bool cashierDone = false; 
+	bool appClerkFirst = rand() % 2;
+
+
 
 	//Check in
 	senatorArriveAtPassportOffice();
 
 	//Safe to do 'normal' interactions now....
-	//TODO: Should be able to use the customer...Interactions 
 
-	for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); }
+	while(!cashierDone){
 
+		if( !(appClerkDone) && (appClerkFirst || pictureClerkDone) ){ //Go to applicationClerk
+			appClerkDone = customerApplicationClerkInteraction(SSN, money, 1);
+		}
+		else if( !pictureClerkDone ){
+			//Go to the picture clerk
+			pictureClerkDone = customerPictureClerkInteraction(SSN, money, 1);
+		}
+		else if(!passportClerkDone){
+			passportClerkDone = customerPassportClerkInteraction(SSN, money, 1);
+			if (!passportClerkDone) { for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }
+		}
+		else if(!cashierDone){
+			cashierDone = customerCashierInteraction(SSN, money, 1);
+			if (!cashierDone) {	for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }
+		}
+	}
 
 	//Done lets leave
 	senatorLeavePassportOffice(SSN);
-
 
 //Here are the output Guidelines for the Senator
 	if(false){
@@ -1477,7 +1535,12 @@ void Part2TestSuit(){
 
 
 
-		printf("DEBUG: Starting Passport Office Simulation with %i Customers and %i Clerks \n", CUSTOMERCOUNT, CLERKCOUNT);
+		printf("Number of Customers = %i \n", CUSTOMERCOUNT);
+		printf("Number of ApplicationClerks = %i \n", CLERKCOUNT);
+		printf("Number of PictureClerks = %i \n", CLERKCOUNT);
+		printf("Number of PassportClerks = %i \n", CLERKCOUNT);
+		printf("Number of Cashiers = %i \n", CLERKCOUNT);
+		printf("Number of Senators = %i \n", SENATORCOUNT);
 
 
 		//States
@@ -1516,19 +1579,19 @@ void Part2TestSuit(){
 		passportClerkSharedDataSSN.clear();
 		passportClerkSharedDataSSN.resize(CLERKCOUNT, 0);
 		applicationCompletion.clear();
-		applicationCompletion.resize(CUSTOMERCOUNT, 0);
+		applicationCompletion.resize(CUSTOMERCOUNT + SENATORCOUNT, 0);
 		pictureCompletion.clear();
-		pictureCompletion.resize(CUSTOMERCOUNT, 0);
+		pictureCompletion.resize(CUSTOMERCOUNT + SENATORCOUNT, 0);
 		passportCompletion.clear();
-		passportCompletion.resize(CUSTOMERCOUNT, 0);
+		passportCompletion.resize(CUSTOMERCOUNT + SENATORCOUNT, 0);
 		passportPunishment.clear();
-		passportPunishment.resize(CUSTOMERCOUNT, 0);
+		passportPunishment.resize(CUSTOMERCOUNT + SENATORCOUNT, 0);
 		cashierSharedDataSSN.clear();
-		cashierSharedDataSSN.resize(CLERKCOUNT, 0);
+		cashierSharedDataSSN.resize(CUSTOMERCOUNT + SENATORCOUNT, 0);
 		cashierRejection.clear();
-		cashierRejection.resize(CUSTOMERCOUNT, 0);
+		cashierRejection.resize(CUSTOMERCOUNT + SENATORCOUNT, 0);
 		doneCompletely.clear();
-		doneCompletely.resize(CUSTOMERCOUNT, 0);
+		doneCompletely.resize(CUSTOMERCOUNT + SENATORCOUNT, 0);
 
 
 		//Initialize dynamic variables

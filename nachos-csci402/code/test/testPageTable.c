@@ -11,7 +11,7 @@
 
 int main() {
 
-  //init i
+  /*init i*/
   int i = 0;
   for(i = 0; i < arrySize; i++){
     arry[i] = i;

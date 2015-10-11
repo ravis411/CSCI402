@@ -146,7 +146,7 @@ Initialize(int argc, char **argv)
     currentThread->setStatus(RUNNING);
 
     //Initialize the pageTableBitMap
-    pageTableBitMap = new BitMap(numPhysPages);
+    pageTableBitMap = new BitMap(NumPhysPages);
 
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C

@@ -231,6 +231,23 @@ void Close_Syscall(int fd) {
     }
 }
 
+////////////////////////////////////////////////////////
+/*******************************************************
+  Our implementations for proj2
+  *****************************************************/
+
+/* Fork a thread to run a procedure ("func") in the *same* address space 
+ * as the current thread.
+ */
+void Fork_Syscall(int funct){
+
+
+}//end Fork_Syscall
+
+
+
+
+
 void ExceptionHandler(ExceptionType which) {
     int type = machine->ReadRegister(2); // Which syscall?
     int rv=0; 	// the return value from a syscall
@@ -267,6 +284,11 @@ void ExceptionHandler(ExceptionType which) {
 		DEBUG('a', "Close syscall.\n");
 		Close_Syscall(machine->ReadRegister(4));
 		break;
+      
+    case SC_Fork:
+      DEBUG('a', "Fork syscall.\n");
+      Fork_Syscall(machine->ReadRegister(4));
+    break;
 	}
 
 	// Put in the return value and increment the PC

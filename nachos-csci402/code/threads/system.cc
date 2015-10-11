@@ -18,6 +18,7 @@ Interrupt *interrupt;			// interrupt status
 Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
+BitMap *pageTableBitMap;    //Bitmap to track unused pages
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
@@ -143,6 +144,9 @@ Initialize(int argc, char **argv)
     // object to save its state. 
     currentThread = new Thread("main");		
     currentThread->setStatus(RUNNING);
+
+    //Initialize the pageTableBitMap
+    pageTableBitMap = new BitMap(numPhysPages);
 
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C

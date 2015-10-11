@@ -11,11 +11,9 @@
 
 int main() {
 
-  /*init i*/
   int i = 0;
-  for(i = 0; i < arrySize; i++){
+  for (i = 0; i < arrySize; i++)
     arry[i] = i;
-  }
 
   OpenFileId fd;
   int bytesread;

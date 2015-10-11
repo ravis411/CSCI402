@@ -4,14 +4,16 @@
 
 #include "syscall.h"
 
- int arry[100];
- char testString[] = "This is a test.\n";
+#define arrySize 10
+
+ int arry[arrySize];
+ char testString[] = 'This is a test.\n';
 
 int main() {
 
   //init i
   int i = 0;
-  for(i = 0; i < 100; i++){
+  for(i = 0; i < arrySize; i++){
     arry[i] = i;
   }
 
@@ -32,6 +34,6 @@ int main() {
     Close(fd);
 
 
-    Write(testString, sizeof("This is a test."), ConsoleOutput);
+    Write(testString, 16, ConsoleOutput);
 
 }

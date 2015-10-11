@@ -1,3 +1,9 @@
+
+*
+!/**/ 
+!*.*
+# The above ignores everything without an extension
+
 # Nachos stuff?
 *nachos
 

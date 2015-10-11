@@ -146,15 +146,14 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 					numPages, size);
 // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
-    bzero(machine->mainMemory, size);//Maybe we can still do this though prof crowely said not to...
     for (i = 0; i < numPages; i++) {
         int ppn = pageTableBitMap->Find();//The PPN of an unused page.
-	pageTable[ppn].virtualPage = i;	// for now, virtual page # = phys page #
-	pageTable[ppn].physicalPage = ppn;
-	pageTable[ppn].valid = TRUE;
-	pageTable[ppn].use = FALSE;
-	pageTable[ppn].dirty = FALSE;
-	pageTable[ppn].readOnly = FALSE;  // if the code segment was entirely on 
+	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+	pageTable[i].physicalPage = ppn;
+	pageTable[i].valid = TRUE;
+	pageTable[i].use = FALSE;
+	pageTable[i].dirty = FALSE;
+	pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
 					// a separate page, we could set its 
 					// pages to be read-only
 

@@ -146,23 +146,29 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 					numPages, size);
 // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
+    bzero(machine->mainMemory, size);//Maybe we can still do this though prof crowely said not to...
     for (i = 0; i < numPages; i++) {
-        int index = pageTableBitMap->Find();
-	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-	pageTable[i].physicalPage = i;
-	pageTable[i].valid = TRUE;
-	pageTable[i].use = FALSE;
-	pageTable[i].dirty = FALSE;
-	pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
+        int ppn = pageTableBitMap->Find();//The PPN of an unused page.
+	pageTable[ppn].virtualPage = i;	// for now, virtual page # = phys page #
+	pageTable[ppn].physicalPage = ppn;
+	pageTable[ppn].valid = TRUE;
+	pageTable[ppn].use = FALSE;
+	pageTable[ppn].dirty = FALSE;
+	pageTable[ppn].readOnly = FALSE;  // if the code segment was entirely on 
 					// a separate page, we could set its 
 					// pages to be read-only
+
+    executable->ReadAt(&(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + i * PageSize);
+
+    //executable->ReadAt(&(machine->mainMemory[P]), PageSize, noffH.initData.inFileAddr);
     }
     
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
-    bzero(machine->mainMemory, size);
+    //bzero(machine->mainMemory, size);
 
 // then, copy in the code and data segments into memory
+    /*
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
 			noffH.code.virtualAddr, noffH.code.size);
@@ -175,8 +181,9 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
         executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr]),
 			noffH.initData.size, noffH.initData.inFileAddr);
     }
+    */
+}//End AddrSpace Constructor
 
-}
 
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace

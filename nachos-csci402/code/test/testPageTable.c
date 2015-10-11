@@ -7,7 +7,7 @@
 #define arrySize 10
 
  int arry[arrySize];
- char testString[] = 'This is a test.\n';
+ char testString[] = "This is a test.\n";
 
 int main() {
 

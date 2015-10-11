@@ -62,5 +62,11 @@ testfiles: testfiles.o start.o
 	$(LD) $(LDFLAGS) start.o testfiles.o -o testfiles.coff
 	../bin/coff2noff testfiles.coff testfiles
 
+testPageTable.o: testPageTable.c
+	$(CC) $(CFLAGS) -c testPageTable.c
+testPageTable: testPageTable.o start.o
+	$(LD) $(LDFLAGS) start.o testPageTable.o -o testPageTable.coff
+	../bin/coff2noff testPageTable.coff testPageTable
+
 clean:
 	rm -f *.o *.coff

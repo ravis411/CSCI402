@@ -257,7 +257,7 @@ void kernel_thread(int vaddr){
    // allocated the stack; but subtract off a bit, to make sure we don't
    // accidentally reference off the end!
 
-    //TODO: HOW DO WE CALCULATE THIS?
+    //TODO: HOW DO WE CALCULATE THIS, ALSO we need to allocate 8 more pages to the page table...?
     machine->WriteRegister(StackReg, numPages * PageSize - 16);
     DEBUG('a', "Initializing stack register to %x\n", numPages * PageSize - 16);
 

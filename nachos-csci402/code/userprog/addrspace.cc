@@ -208,8 +208,8 @@ AddrSpace::~AddrSpace()
 void
 AddrSpace::Fork()
 {
-    DEBUG("f", "In AddrSpace::Fork\n");
-    int newNumPages = numPages + divRoundUp(UserStackSize,PageSize);
+    DEBUG('f', "In AddrSpace::Fork\n");
+    unsigned int newNumPages = numPages + divRoundUp(UserStackSize,PageSize);
     ASSERT(newNumPages <= NumPhysPages);       // check we're not trying to run anything too big --
 
     //copy old table
@@ -233,7 +233,7 @@ AddrSpace::Fork()
     numPages = newNumPages;
     InitRegisters();
     RestoreState();
-    DEBUG("f", "In AddrSpace::Fork\n");
+    DEBUG('f', "In AddrSpace::Fork\n");
 }
 
 

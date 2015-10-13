@@ -266,6 +266,31 @@ void PrintInt_Syscall(int wat){
   printf("%i", wat);
 }
 
+/*************************************************************************
+* Exit()
+*************************************************************************/
+void Exit_Syscall(int status){
+  //Minumum this must have 
+  currentThread->Finish();
+  //Case 1
+    //Not last thread in process
+    //reclaim 8 pages of stack
+    //vpn,ppn,valid
+    //memoryBitMap->Clear(ppn)
+    //valid = false
+
+  //Case 2
+    //Last executing thread in last process
+    //interupt->Halt();//shut downs nachos
+
+  //Case 3
+    //Last executing thread in a process - not last process
+    //reclaim all unreclaimed memory
+    //for(pageTable)
+      //if valid clear
+    //locks/cvs match addspace* w/ process table
+}
+
 
 
 void ExceptionHandler(ExceptionType which) {
@@ -313,6 +338,11 @@ void ExceptionHandler(ExceptionType which) {
     case SC_PrintInt:
       DEBUG('a', "PrintInt syscall.\n");
       PrintInt_Syscall(machine->ReadRegister(4));
+    break;
+
+    case SC_Exit:
+      DEBUG('a', "Exit syscall."\n);
+      Exit_Syscall(machine->ReadRegister(4));
     break;
 	}
 

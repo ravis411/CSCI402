@@ -52,7 +52,7 @@ void Halt();
 /* Address space control operations: Exit, Exec, and Join */
 
 /* This user program is done (status = 0 means exited normally). */
-void Exit(int status);	
+void Exit(int status);
 
 /* A unique identifier for an executing user program (address space) */
 typedef int SpaceId;	

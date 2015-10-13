@@ -12,11 +12,14 @@
 
 void function1(){
   Write("\nSuccessfully Forked Function1.\n", sizeof("\nSuccessfully Forked Function1.\n"), ConsoleOutput );
+  Exit(0);
+
 }
 
 void thread2(){
   char functString[] = "\nSuccessfully Forked Thread2.\n";
   Write( functString, sizeof(functString), ConsoleOutput );
+  Exit(0);
 }
 
 

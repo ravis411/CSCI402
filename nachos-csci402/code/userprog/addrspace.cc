@@ -206,7 +206,7 @@ AddrSpace::~AddrSpace()
 //////////////////////////////////////////////////////////////////
 
 void
-AddrSpace::Fork()
+AddrSpace::Fork(int nextInstruction)
 {
     DEBUG('f', "In AddrSpace::Fork\n");
     unsigned int newNumPages = numPages + divRoundUp(UserStackSize,PageSize);
@@ -232,8 +232,10 @@ AddrSpace::Fork()
     }
     numPages = newNumPages;
     InitRegisters();
+    machine->WriteRegister(PCReg, nextInstruction);
+    machine->WriteRegister(NextPCReg, nextInstruction + 4);
     RestoreState();
-    DEBUG('f', "In AddrSpace::Fork\n");
+    DEBUG('f', "End AddrSpace::Fork\n");
 }
 
 

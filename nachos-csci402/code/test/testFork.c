@@ -23,6 +23,8 @@ void thread2(){
 
 void thread3(){
   Write("\nSucessfully Forked Thread3.\n", sizeof("\nSucessfully Forked Thread3.\n"), ConsoleOutput );
+  for(int i = 0; i < 5; i++)
+    PrintInt(i);
   Exit(0);
 }
 

@@ -208,6 +208,7 @@ AddrSpace::~AddrSpace()
 void
 AddrSpace::Fork()
 {
+    DEBUG("f", "In AddrSpace::Fork\n");
     int newNumPages = numPages + divRoundUp(UserStackSize,PageSize);
     ASSERT(newNumPages <= NumPhysPages);       // check we're not trying to run anything too big --
 
@@ -229,10 +230,10 @@ AddrSpace::Fork()
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;
     }
-
+    numPages = newNumPages;
     InitRegisters();
     RestoreState();
-
+    DEBUG("f", "In AddrSpace::Fork\n");
 }
 
 

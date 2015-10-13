@@ -11,8 +11,7 @@
 
 
 void function1(){
-  char functString[] = "\nSuccessfully Forked Function1.\n";
-  Write( functString, sizeof(functString), ConsoleOutput );
+  Write("\nSuccessfully Forked Function1.\n", sizeof("\nSuccessfully Forked Function1.\n"), ConsoleOutput );
 }
 
 void thread2(){
@@ -50,13 +49,14 @@ for (i = 0; i < arrySize; i++)
 		PrintInt(i);
 		Write(" ", 1, ConsoleOutput);
 	}
+	
+Write("\n", 1, ConsoleOutput);
 
-
-  //Now lets test fork...
+  /*Now lets test fork...*/
   Fork(function1);
   Fork(thread2);
 
-	Write("\n", 1, ConsoleOutput);
+	
 	Write("\n", 1, ConsoleOutput);
 }
 

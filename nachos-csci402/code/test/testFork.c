@@ -9,6 +9,18 @@
  int arry[arrySize];
  char welcomeString[] = "\n\nFork Syscall test...\n\n";
 
+
+void function1(){
+  char functString[] = "\nSuccessfully Forked Function1.\n";
+  Write( functString, sizeof(functString), ConsoleOutput );
+}
+
+void thread2(){
+  char functString[] = "\nSuccessfully Forked Thread2.\n";
+  Write( functString, sizeof(functString), ConsoleOutput );
+}
+
+
 int main() {
 
   int i;
@@ -40,7 +52,9 @@ for (i = 0; i < arrySize; i++)
 	}
 
 
-
+  //Now lets test fork...
+  Fork(function1);
+  Fork(thread2);
 
 	Write("\n", 1, ConsoleOutput);
 	Write("\n", 1, ConsoleOutput);

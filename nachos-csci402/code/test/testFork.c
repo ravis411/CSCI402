@@ -24,10 +24,12 @@ void thread2(){
 void thread3(){
   int i;
   Write("\nSucessfully Forked Thread3.\n", sizeof("\nSucessfully Forked Thread3.\n"), ConsoleOutput );
-  for(i = 0; i < 5; i++)
+  for(i = 0; i < 10; i++)
     PrintInt(i);
   Exit(0);
 }
+
+
 
 int main() {
 

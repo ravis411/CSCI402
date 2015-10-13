@@ -244,6 +244,7 @@ void kernel_thread(int vaddr){
   kernel_threadLock->Acquire();
   currentThread->space->Fork(vaddr);//add stack space to pagetable and init registers...
   kernel_threadLock->Release();
+  DEBUG('f', "INNNNN kernel_thread.\n");
   machine->Run();
   ASSERT(FALSE);
 }

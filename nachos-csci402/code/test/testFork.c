@@ -60,8 +60,8 @@ Write("\n", 1, ConsoleOutput);
 
   /*Now lets test fork...*/
   Fork(function1);
+  Fork(thread3);
   Fork(thread2);
-
 	
 	Write("\n", 1, ConsoleOutput);
 }

@@ -236,12 +236,14 @@ void Close_Syscall(int fd) {
   Our implementations for proj2 above code was provided
   *****************************************************/
 
-
-
+#include "synch.h"
+Lock* kernel_threadLock = new Lock("Kernel Thread Lock");//Idk maybe interupts are already off hopefully..?
 //Should this go here or elsewhere?
 void kernel_thread(int vaddr){
   DEBUG('f', "INNNNN kernel_thread.\n");
+  kernel_threadLock->Acquire();
   currentThread->space->Fork(vaddr);//add stack space to pagetable and init registers...
+  kernel_threadLock->Release();
   machine->Run();
   ASSERT(FALSE);
 }
@@ -256,6 +258,7 @@ void Fork_Syscall(int funct){
   t->space = currentThread->space;
  // DEBUG('f', "CurrentSpace: %i  TSpace: %i\n", currentThread->space, t->space);
   t->Fork((VoidFunctionPtr)kernel_thread, funct); //kernel_thread??
+  currentThread->Yield();
   DEBUG('f', "End of Fork Syscall.\n");
 }//end Fork_Syscall
 

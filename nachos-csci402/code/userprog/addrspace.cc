@@ -213,7 +213,7 @@ AddrSpace::Fork(int nextInstruction)
     ASSERT(newNumPages <= NumPhysPages);       // check we're not trying to run anything too big --
 
     //copy old table
-    TranslationEntry* newPageTable = new TranslationEntry[numPages];
+    TranslationEntry* newPageTable = new TranslationEntry[newNumPages];
     for(unsigned int i = 0; i < numPages; i++){
         newPageTable[i] = pageTable[i];
     }

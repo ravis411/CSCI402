@@ -250,11 +250,12 @@ void kernel_thread(int vaddr){
  * as the current thread.
  */
 void Fork_Syscall(int funct){
-  DEBUG('f', "In fork syscall.\n");
+  DEBUG('f', "In fork syscall. funct = %i\n", funct);
 
-  Thread* t = new Thread("Forked thread.");
+  Thread* t 
+  t = new Thread("Forked thread.");
   t->space = currentThread->space;
-  t->Fork(kernel_thread, (int) funct); //kernel_thread??
+  t->Fork(kernel_thread, funct); //kernel_thread??
   DEBUG('f', "End of Fork Syscall.\n");
 }//end Fork_Syscall
 

@@ -31,11 +31,11 @@ void thread3(){
 
 void thread4(){
   int i;
-  char testString[] = "Thread4 Done.\n";
+  //char testString[] = "Thread4 Done.\n";
   Write("\nSucessfully Forked Thread4.\n", sizeof("\nSucessfully Forked Thread4.\n"), ConsoleOutput );
   for(i = 0; i < 10; i++)
     PrintInt(i);
-  Write(testString, sizeof(testString), ConsoleOutput);
+  Write("Why can't we put testString here?\n", sizeof("Why can't we put testString here?\n"), ConsoleOutput);
   Exit(0);
 }
 

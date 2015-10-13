@@ -214,14 +214,14 @@ AddrSpace::Fork()
 
     //copy old table
     TranslationEntry* newPageTable = new TranslationEntry[numPages];
-    for(int i = 0; i < numPages; i++){
+    for(unsigned int i = 0; i < numPages; i++){
         newPageTable[i] = pageTable[i];
     }
     delete pageTable;
     pageTable = newPageTable;
 
     //Add 8 pages for stack
-    for(int i = numPages; i < newNumPages; i++){
+    for(unsigned int i = numPages; i < newNumPages; i++){
         int ppn = pageTableBitMap->Find();
         pageTable[i].virtualPage = i;
         pageTable[i].physicalPage = ppn;

@@ -255,7 +255,7 @@ void Fork_Syscall(int funct){
   t = new Thread("Forked thread.");
   t->space = currentThread->space;
  // DEBUG('f', "CurrentSpace: %i  TSpace: %i\n", currentThread->space, t->space);
-  t->Fork(VoidFunctPointer kernel_thread, funct); //kernel_thread??
+  t->Fork((VoidFunctionPtr)kernel_thread, funct); //kernel_thread??
   DEBUG('f', "End of Fork Syscall.\n");
 }//end Fork_Syscall
 

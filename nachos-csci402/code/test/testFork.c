@@ -17,8 +17,7 @@ void function1(){
 }
 
 void thread2(){
-  char functString[] = "\nSuccessfully Forked Thread2.\n";
-  Write( functString, sizeof(functString), ConsoleOutput );
+  Write( "\nSuccessfully Forked Thread2.\n", sizeof("\nSuccessfully Forked Thread2.\n"), ConsoleOutput );
   Exit(0);
 }
 

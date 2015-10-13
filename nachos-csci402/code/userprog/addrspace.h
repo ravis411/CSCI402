@@ -36,6 +36,8 @@ class AddrSpace {
     void RestoreState();		// info on a context switch
     Table fileTable;			// Table of openfiles
 
+    void Fork();//Can be called to add a stack
+
  private:
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!

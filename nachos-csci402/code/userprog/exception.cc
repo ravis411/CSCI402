@@ -233,36 +233,16 @@ void Close_Syscall(int fd) {
 
 ////////////////////////////////////////////////////////
 /*******************************************************
-  Our implementations for proj2
+  Our implementations for proj2 above code was provided
   *****************************************************/
+
 
 
 //Should this go here or elsewhere?
 void kernel_thread(int vaddr){
-
-  //Init registers...?
-  int i;
-
-  for (i = 0; i < NumTotalRegs; i++)
-    machine->WriteRegister(i, 0);
-
-    // Initial program counter
-    machine->WriteRegister(PCReg, vaddr); 
-
-    // Need to also tell MIPS where next instruction is, because
-    // of branch delay possibility
-    machine->WriteRegister(NextPCReg, 4);
-
-   // Set the stack register to the end of the address space, where we
-   // allocated the stack; but subtract off a bit, to make sure we don't
-   // accidentally reference off the end!
-
-    //TODO: HOW DO WE CALCULATE THIS, ALSO we need to allocate 8 more pages to the page table...?
-    machine->WriteRegister(StackReg, numPages * PageSize - 16);
-    DEBUG('a', "Initializing stack register to %x\n", numPages * PageSize - 16);
-
-
+  currentThread->space->Fork();//add stack space to pagetable and init registers...
   machine->Run();
+  ASSERT(FALSE);
 }
 
 /* Fork a thread to run a procedure ("func") in the *same* address space 
@@ -274,10 +254,11 @@ void Fork_Syscall(int funct){
   Thread* t = new Thread("Forked thread.");
   t->space = currentThread->space;
   t->Fork(kernel_thread, funct); //kernel_thread??
-
 }//end Fork_Syscall
 
-
+void PrintInt_Syscall(int wat){
+  printf("%i", wat);
+}
 
 
 
@@ -321,6 +302,11 @@ void ExceptionHandler(ExceptionType which) {
     case SC_Fork:
       DEBUG('a', "Fork syscall.\n");
       Fork_Syscall(machine->ReadRegister(4));
+    break;
+
+    case SC_PrintInt:
+      DEBUG('a', "PrintInt syscall.\n");
+      PrintInt_Syscall(machine->ReadRegister(4));
     break;
 	}
 

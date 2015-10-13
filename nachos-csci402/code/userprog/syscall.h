@@ -29,6 +29,7 @@
 #define SC_Close	8
 #define SC_Fork		9
 #define SC_Yield	10
+#define SC_PrintInt	11
 
 #define MAXFILENAME 256
 
@@ -125,6 +126,10 @@ void Fork(void (*func)());
  * or not. 
  */
 void Yield();		
+
+/* PrintInt prints an int ********************
+*/
+void PrintInt();
 
 #endif /* IN_ASM */
 

@@ -148,16 +148,16 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
         int ppn = pageTableBitMap->Find();//The PPN of an unused page.
-	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-	pageTable[i].physicalPage = ppn;
-	pageTable[i].valid = TRUE;
-	pageTable[i].use = FALSE;
-	pageTable[i].dirty = FALSE;
-	pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
+    	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+    	pageTable[i].physicalPage = ppn;
+    	pageTable[i].valid = TRUE;
+    	pageTable[i].use = FALSE;
+    	pageTable[i].dirty = FALSE;
+    	pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
 					// a separate page, we could set its 
 					// pages to be read-only
 
-    executable->ReadAt(&(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + i * PageSize);
+    executable->ReadAt( &(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + (i * PageSize) );
 
     //executable->ReadAt(&(machine->mainMemory[P]), PageSize, noffH.initData.inFileAddr);
     }
@@ -195,6 +195,49 @@ AddrSpace::~AddrSpace()
 {
     delete pageTable;
 }
+
+
+///////////////////////////////////////////////////////////////////
+// AddrSpace::Fork()
+//
+//  Adds 8 pages to pageTable,
+//       inits registers for current thread.
+//
+//////////////////////////////////////////////////////////////////
+
+void
+AddrSpace::Fork()
+{
+    int newNumPages = numPages + divRoundUp(UserStackSize,PageSize);
+    ASSERT(newNumPages <= NumPhysPages);       // check we're not trying to run anything too big --
+
+    //copy old table
+    TranslationEntry* newPageTable = new TranslationEntry[numPages];
+    for(int i = 0; i < numPages; i++){
+        newPageTable[i] = pageTable[i];
+    }
+    delete pageTable;
+    pageTable = newPageTable;
+
+    //Add 8 pages for stack
+    for(int i = numPages; i < newNumPages; i++){
+        int ppn = pageTableBitMap->Find();
+        pageTable[i].virtualPage = i;
+        pageTable[i].physicalPage = ppn;
+        pageTable[i].valid = TRUE;
+        pageTable[i].use = FALSE;
+        pageTable[i].dirty = FALSE;
+        pageTable[i].readOnly = FALSE;
+    }
+
+    InitRegisters();
+    RestoreState();
+
+}
+
+
+
+
 
 //----------------------------------------------------------------------
 // AddrSpace::InitRegisters

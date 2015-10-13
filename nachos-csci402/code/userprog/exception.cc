@@ -240,7 +240,7 @@ void Close_Syscall(int fd) {
 
 //Should this go here or elsewhere?
 void kernel_thread(int vaddr){
-  DEBUG('f', "In kernel_thread.\n");
+  DEBUG('f', "INNNNN kernel_thread.\n");
   currentThread->space->Fork(vaddr);//add stack space to pagetable and init registers...
   machine->Run();
   ASSERT(FALSE);
@@ -254,8 +254,8 @@ void Fork_Syscall(int funct){
   DEBUG('f', "In fork syscall. funct = %i\n", funct);
   t = new Thread("Forked thread.");
   t->space = currentThread->space;
-  DEBUG('f', "CurrentSpace: %i  TSpace: %i\n", currentThread->space, t->space);
-  t->Fork(kernel_thread, funct); //kernel_thread??
+ // DEBUG('f', "CurrentSpace: %i  TSpace: %i\n", currentThread->space, t->space);
+  t->Fork(VoidFunctPointer kernel_thread, funct); //kernel_thread??
   DEBUG('f', "End of Fork Syscall.\n");
 }//end Fork_Syscall
 

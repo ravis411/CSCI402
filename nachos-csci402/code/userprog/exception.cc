@@ -254,7 +254,7 @@ void Fork_Syscall(int funct){
   DEBUG('f', "In fork syscall. funct = %i\n", funct);
   t = new Thread("Forked thread.");
   t->space = currentThread->space;
-  DEBUG('f', "CurrentSpace: %i  TSpace: %i\n", currentThread->space, t->space)
+  DEBUG('f', "CurrentSpace: %i  TSpace: %i\n", currentThread->space, t->space);
   t->Fork(kernel_thread, funct); //kernel_thread??
   DEBUG('f', "End of Fork Syscall.\n");
 }//end Fork_Syscall

@@ -341,7 +341,7 @@ void ExceptionHandler(ExceptionType which) {
     break;
 
     case SC_Exit:
-      DEBUG('a', "Exit syscall."\n);
+      DEBUG('a', "Exit syscall.\n");
       Exit_Syscall(machine->ReadRegister(4));
     break;
 	}

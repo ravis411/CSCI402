@@ -21,6 +21,10 @@ void thread2(){
   Exit(0);
 }
 
+void thread3(){
+  Write("\nSucessfully Forked Thread3.\n", sizeof("\nSucessfully Forked Thread3.\n"), ConsoleOutput );
+  Exit(0);
+}
 
 int main() {
 

@@ -29,6 +29,14 @@ void thread3(){
   Exit(0);
 }
 
+void thread4(){
+  int i;
+  Write("\nSucessfully Forked Thread4.\n", sizeof("\nSucessfully Forked Thread4.\n"), ConsoleOutput );
+  for(i = 0; i < 10; i++)
+    PrintInt(i);
+  Exit(0);
+}
+
 
 
 int main() {
@@ -67,6 +75,7 @@ Write("\n", 1, ConsoleOutput);
   Fork(function1);
   Fork(thread3);
   Fork(thread2);
+  Fork(thread4);
 	
 	Write("\n", 1, ConsoleOutput);
 }

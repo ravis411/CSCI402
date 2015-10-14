@@ -270,8 +270,9 @@ void PrintInt_Syscall(int wat){
 * Run the executable, stored in the Nachos file "name", and return the  *
 * address space identifier                                              *
 ***********************************************************************/
-SpaceId Exec_Syscal(char *name){
+SpaceId Exec_Syscal(int name){
 
+  return -1;
 }
 
 /*************************************************************************

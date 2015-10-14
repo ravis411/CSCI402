@@ -263,17 +263,47 @@ void Fork_Syscall(int funct){
   DEBUG('f', "End of Fork Syscall.\n");
 }//end Fork_Syscall
 
-void PrintInt_Syscall(int wat){
-  printf("%i", wat);
-}
+
+
+
 /************************************************************************
 * Run the executable, stored in the Nachos file "name", and return the  *
 * address space identifier                                              *
 ***********************************************************************/
+void kernel_exec(){
+  OpenFile *executable = fileSystem->Open(filename);
+  AddrSpace *space;
+
+  if (executable == NULL) {
+    printf("Unable to open file %s\n", filename);
+    return;
+  }
+   
+    space = new AddrSpace(executable);
+
+    currentThread->space = space;
+
+    delete executable;      // close file
+
+    space->InitRegisters();   // set the initial register values
+    space->RestoreState();    // load page table register
+
+    machine->Run();     // jump to the user progam
+    ASSERT(FALSE);      // machine->Run never returns;
+          // the address space exits
+          // by doing the syscall "exit"
+}
+
 SpaceId Exec_Syscall(int name){
+    DEBUG('e', "In exec syscall.\n");
+    Thread* t;
+    t = new Thread("Execed Thread.");
+    t->Fork((VoidFunctionPtr)kernel_exec);
 
   return -1;
 }
+
+
 
 /*************************************************************************
 * Exit()
@@ -299,6 +329,18 @@ void Exit_Syscall(int status){
       //if valid clear
     //locks/cvs match addspace* w/ process table
 }
+
+
+/*************************************************************
+//Prints and int
+**************************************************************/
+void PrintInt_Syscall(int wat){
+  printf("%i", wat);
+}
+
+
+
+
 
 
 

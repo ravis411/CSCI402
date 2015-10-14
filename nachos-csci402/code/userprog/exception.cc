@@ -259,7 +259,7 @@ void Fork_Syscall(int funct){
   t->space = currentThread->space;
  // DEBUG('f', "CurrentSpace: %i  TSpace: %i\n", currentThread->space, t->space);
   t->Fork((VoidFunctionPtr)kernel_thread, funct); //kernel_thread??
-  //currentThread->Yield();//It should not be necessary to yield here
+  currentThread->Yield();//It should not be necessary to yield here
   DEBUG('f', "End of Fork Syscall.\n");
 }//end Fork_Syscall
 
@@ -270,7 +270,7 @@ void PrintInt_Syscall(int wat){
 * Run the executable, stored in the Nachos file "name", and return the  *
 * address space identifier                                              *
 ***********************************************************************/
-SpaceId Exec_Syscal(int name){
+SpaceId Exec_Syscall(int name){
 
   return -1;
 }
@@ -356,7 +356,7 @@ void ExceptionHandler(ExceptionType which) {
 
     case SC_Exec:
       DEBUG('a', "Exec syscall.\n");
-      rv = Exec_Syscal(machine->ReadRegister(4));
+      rv = Exec_Syscall(machine->ReadRegister(4));
     break;
 
 	}

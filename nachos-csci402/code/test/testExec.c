@@ -10,14 +10,6 @@
  char welcomeString[] = "\nExec Syscall test...\n\n";
  char fileName[] = "../test/testFork";
 
-
-void function1(){
-  Write("\nSuccessfully Forked Function1.\n", sizeof("\nSuccessfully Forked Function1.\n"), ConsoleOutput );
-  Exit(0);
-
-}
-
-
 int main() {
 
   int i;

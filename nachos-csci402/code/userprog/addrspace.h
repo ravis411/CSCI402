@@ -22,6 +22,14 @@
 #define MaxOpenFiles 256
 #define MaxChildSpaces 256
 
+
+class PageTableEntry: public TranslationEntry{
+    public:
+    // Assignment operator
+    PageTableEntry &operator=(const PageTableEntry& entry);
+};
+
+
 class AddrSpace {
   public:
     AddrSpace(OpenFile *executable);	// Create an address space,
@@ -39,10 +47,11 @@ class AddrSpace {
     void Fork(int nextInstruction);//Can be called to add a stack
 
  private:
-    TranslationEntry *pageTable;	// Assume linear page table translation
+    PageTableEntry *pageTable;	// Assume linear page table translation
 					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
 					// address space
+    int FindPPN();  //Returns a ppn if found otherwise prints a message and halts nachos
 };
 
 #endif // ADDRSPACE_H

@@ -78,6 +78,25 @@ void *Table::Remove(int i) {
     return f;
 }
 
+
+/////////////////////////////////////////////////////////////////
+//  PageTableEntry
+///////////////////////////////////////////////////////////////////
+PageTableEntry &PageTableEntry::operator=(const PageTableEntry& entry){
+    if(&entry != this) // check for self assignment
+    {
+        virtualPage = entry.virtualPage;
+        physicalPage = entry.physicalPage;
+        valid = entry.valid;
+        use = entry.use;
+        dirty = entry.dirty;
+        readOnly = entry.readOnly;
+    }
+    return *this;
+}
+
+
+
 //----------------------------------------------------------------------
 // SwapHeader
 // 	Do little endian to big endian conversion on the bytes in the 
@@ -145,9 +164,9 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     DEBUG('a', "Initializing address space, num pages %d, size %d\n", 
 					numPages, size);
 // first, set up the translation 
-    pageTable = new TranslationEntry[numPages];
+    pageTable = new PageTableEntry[numPages];
     for (i = 0; i < numPages; i++) {
-        int ppn = pageTableBitMap->Find();//The PPN of an unused page.
+        int ppn = FindPPN();//The PPN of an unused page.
     	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
     	pageTable[i].physicalPage = ppn;
     	pageTable[i].valid = TRUE;
@@ -197,6 +216,20 @@ AddrSpace::~AddrSpace()
 }
 
 
+
+/////////////////////////
+// FindPPN
+///////////////////////
+int AddrSpace::FindPPN(){
+    int ppn = pageTableBitMap->Find();
+    if(ppn == -1){
+        printf("Fatal Error: Nachos out of memory. Bitmap retured -1. Aborting...\n");
+        interrupt->Halt();
+    }
+    return ppn;
+}
+
+
 ///////////////////////////////////////////////////////////////////
 // AddrSpace::Fork()
 //
@@ -209,32 +242,40 @@ void
 AddrSpace::Fork(int nextInstruction)
 {
     DEBUG('f', "In AddrSpace::Fork\n");
+
+    //Should we really disable interrupts?
+    // Would be better to acquire a lock but that has to be acquired wherever changes to these values take place...
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+
     unsigned int newNumPages = numPages + divRoundUp(UserStackSize,PageSize);
     ASSERT(newNumPages <= NumPhysPages);       // check we're not trying to run anything too big --
 
     //copy old table
-    TranslationEntry* newPageTable = new TranslationEntry[newNumPages];
+    PageTableEntry* newPageTable = new PageTableEntry[newNumPages];
     for(unsigned int i = 0; i < numPages; i++){
-        newPageTable[i] = pageTable[i];
+        newPageTable[i] = pageTable[i]; //Overloaded = operator now does a deep copy
     }
     delete pageTable;
     pageTable = newPageTable;
 
     //Add 8 pages for stack
     for(unsigned int i = numPages; i < newNumPages; i++){
-        int ppn = pageTableBitMap->Find();
         pageTable[i].virtualPage = i;
-        pageTable[i].physicalPage = ppn;
+        pageTable[i].physicalPage = FindPPN();
         pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;
     }
+
     numPages = newNumPages;
     InitRegisters();
     machine->WriteRegister(PCReg, nextInstruction);
     machine->WriteRegister(NextPCReg, nextInstruction + 4);
     RestoreState();
+
+    (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+
     DEBUG('f', "End AddrSpace::Fork\n");
 }
 

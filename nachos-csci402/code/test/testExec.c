@@ -29,7 +29,7 @@ int main() {
 
   Write("About to call exec...\n", sizeof("About to call exec...\n"), ConsoleOutput);
 
-  Exec(fileName);
+  Exec(fileName, sizeof(fileName));
 
 	
 Write("\n", 1, ConsoleOutput);

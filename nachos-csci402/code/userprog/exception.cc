@@ -322,7 +322,7 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 
 		Thread* t;
 		t = new Thread("Execed Thread.");
-		t->Fork((VoidFunctionPtr)kernel_exec, &buf);
+		t->Fork((VoidFunctionPtr)kernel_exec, (int)buf);
 
 	return -1;
 }

@@ -365,7 +365,7 @@ void PrintInt_Syscall(int wat){
 /*************************************************************
 //Prints a String
 **************************************************************/
-void PrintString_Syscall(unsigned int vaddr, int length){
+void PrintString_Syscall(unsigned int vaddr, int len){
 	char *buf;		// Kernel buffer for output
 		
 		

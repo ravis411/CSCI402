@@ -9,13 +9,13 @@
 
 int main() {
 
-  Write(welcomeString, sizeof(welcomeString), ConsoleOutput);
+  PrintString(welcomeString, sizeof(welcomeString));
 
   Exec(fileName, sizeof(fileName));
   Exec(fileName, sizeof(fileName));
 
 	
-Write("\n", 1, ConsoleOutput);
-Write("\n", 1, ConsoleOutput);
+PrintString("\n", 1);
+PrintString("\n", 1);
 }
 

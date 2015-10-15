@@ -11,19 +11,19 @@
 
 
 void function1(){
-  Write("\nSuccessfully Forked Function1.\n", sizeof("\nSuccessfully Forked Function1.\n"), ConsoleOutput );
+  PrintString("\nSuccessfully Forked Function1.\n", sizeof("\nSuccessfully Forked Function1.\n"));
   Exit(0);
 
 }
 
 void thread2(){
-  Write( "\nSuccessfully Forked Thread2.\n", sizeof("\nSuccessfully Forked Thread2.\n"), ConsoleOutput );
+  PrintString( "\nSuccessfully Forked Thread2.\n", sizeof("\nSuccessfully Forked Thread2.\n"));
   Exit(0);
 }
 
 void thread3(){
   int i;
-  Write("\nSucessfully Forked Thread3.\n", sizeof("\nSucessfully Forked Thread3.\n"), ConsoleOutput );
+  PrintString("\nSucessfully Forked Thread3.\n", sizeof("\nSucessfully Forked Thread3.\n"));
   for(i = 0; i < 10; i++)
     PrintInt(i);
   Exit(0);
@@ -32,7 +32,7 @@ void thread3(){
 void thread4(){
   int i;
   /*char testString[] = "Thread4 Done.\n"; WHY CANT WE DO SOMETHING LIKE THIS!!! UGGHGH*/
-  Write("\nSucessfully Forked Thread4.\n", sizeof("\nSucessfully Forked Thread4.\n"), ConsoleOutput );
+  PrintString("\nSucessfully Forked Thread4.\n", sizeof("\nSucessfully Forked Thread4.\n"));
   for(i = 0; i < 10; i++)
     PrintInt(i);
   Write("\nThread4 Done.\n", sizeof("\nThread4 Done.\n"), ConsoleOutput);

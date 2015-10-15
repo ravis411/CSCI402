@@ -270,8 +270,11 @@ void Fork_Syscall(int funct){
 * Run the executable, stored in the Nachos file "name", and return the  *
 * address space identifier                                              *
 ***********************************************************************/
+Lock* kernel_exec_lock = new Lock("Kernel Exec lock for filename...");
+char *kernel_execBUF = null;
 void kernel_exec(int name){
-	//printf("Name: %s \n\n", name);
+
+	printf("Name: %s \n\n", name);
 	return;/*
 	OpenFile *executable = fileSystem->Open(name);
 	AddrSpace *space;
@@ -311,17 +314,15 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 					return -1;
 				}
 		}
-		printf("THe string: %s\n", buf);
-		printf("The String: ");
 
-		for(int i =0; i < len; i++)
-			printf("%c", buf[i]);
-		printf("\n");
-		return -1;
+		string name(buf);
+
+		DEBUG('e' ,"The filename: %s\n", buf);
+		DEBUG('e' ,"Or as a string: %s\n", c_str(buf));
 
 		Thread* t;
 		t = new Thread("Execed Thread.");
-		t->Fork((VoidFunctionPtr)kernel_exec, vaddr);
+		t->Fork((VoidFunctionPtr)kernel_exec, buf);
 
 	return -1;
 }

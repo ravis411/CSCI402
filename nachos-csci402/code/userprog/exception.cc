@@ -313,8 +313,10 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 		}
 
 		string name(buf);
-
-		printf("The String: %s\n", name);
+		printf("The String: ");
+		for(int i =0; i < len; i++)
+		printf("%s", buf[i]);
+	printf("\n");
 		return -1;
 
 		Thread* t;

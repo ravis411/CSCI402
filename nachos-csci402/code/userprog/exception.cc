@@ -318,7 +318,7 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 		string name(buf);
 
 		DEBUG('e' ,"The filename: %s\n", buf);
-		DEBUG('e' ,"Or as a string: %s\n", c_str(buf));
+		DEBUG('e' ,"Or as a string: %s\n", name.c_str());
 
 		Thread* t;
 		t = new Thread("Execed Thread.");

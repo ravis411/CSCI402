@@ -292,7 +292,7 @@ void kernel_exec(int name){
 
 		space->InitRegisters();   // set the initial register values
 		space->RestoreState();    // load page table register
-		delete[] name;
+		delete[] (char*)name;
 		machine->Run();     // jump to the user progam
 		ASSERT(FALSE);      // machine->Run never returns;
 					// the address space exits

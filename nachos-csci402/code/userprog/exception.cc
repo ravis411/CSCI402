@@ -270,7 +270,7 @@ void Fork_Syscall(int funct){
 * Run the executable, stored in the Nachos file "name", and return the  *
 * address space identifier                                              *
 ***********************************************************************/
-void kernel_exec(int name){
+void kernel_exec(string name){
 	printf("Name: %s \n\n", name);
 	return;/*
 	OpenFile *executable = fileSystem->Open(name);
@@ -303,20 +303,20 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 		
 		if ( !(buf = new char[len]) ) {
 			printf("%s","Error allocating kernel buffer for write!\n");
-			return;
+			return -1;
 		} else {
 				if ( copyin(vaddr,len,buf) == -1 ) {
 					printf("%s","Bad pointer passed to to Exec: Exec aborted.\n");
 					delete[] buf;
-					return;
+					return -1;
 				}
 		}
 
 		string s(buf);
 
 		printf("The String: %s\n", s);
-		return;
-		
+		return -1;
+
 		Thread* t;
 		t = new Thread("Execed Thread.");
 		t->Fork((VoidFunctionPtr)kernel_exec, name);

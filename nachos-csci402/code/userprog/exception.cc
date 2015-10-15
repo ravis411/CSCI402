@@ -236,7 +236,7 @@ void Close_Syscall(int fd) {
 	Our implementations for proj2 above code was provided
 	*****************************************************/
 
-#include "synch.h"
+//#include "synch.h"
 //Lock* kernel_threadLock = new Lock("Kernel Thread Lock");//Idk maybe interupts are already off hopefully..?
 //Should this go here or elsewhere?
 void kernel_thread(int vaddr){
@@ -270,8 +270,8 @@ void Fork_Syscall(int funct){
 * Run the executable, stored in the Nachos file "name", and return the  *
 * address space identifier                                              *
 ***********************************************************************/
-Lock* kernel_exec_lock = new Lock("Kernel Exec lock for filename...");
-char *kernel_execBUF = null;
+//Lock* kernel_exec_lock = new Lock("Kernel Exec lock for filename...");
+//char *kernel_execBUF = null;
 void kernel_exec(int name){
 
 	printf("Name: %s \n\n", name);

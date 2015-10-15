@@ -274,8 +274,8 @@ void Fork_Syscall(int funct){
 //char *kernel_execBUF = null;
 void kernel_exec(int name){
 
-	printf("Name: %s \n\n", name);
-	return;/*
+	DEBUG('e', "Kernel_exec system call: FileName: %s \n\n", name);
+
 	OpenFile *executable = fileSystem->Open(name);
 	AddrSpace *space;
 
@@ -292,7 +292,7 @@ void kernel_exec(int name){
 
 		space->InitRegisters();   // set the initial register values
 		space->RestoreState();    // load page table register
-
+		delete[] name;
 		machine->Run();     // jump to the user progam
 		ASSERT(FALSE);      // machine->Run never returns;
 					// the address space exits
@@ -315,10 +315,10 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 				}
 		}
 
-		string name(buf);
+		//string name(buf);
 
 		DEBUG('e' ,"The filename: %s\n", buf);
-		DEBUG('e' ,"Or as a string: %s\n", name.c_str());
+		//DEBUG('e' ,"Or as a string: %s\n", name.c_str());
 
 		Thread* t;
 		t = new Thread("Execed Thread.");

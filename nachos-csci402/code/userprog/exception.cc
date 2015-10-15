@@ -271,7 +271,7 @@ void Fork_Syscall(int funct){
 * address space identifier                                              *
 ***********************************************************************/
 void kernel_exec(int name){
-  printf("Name: %s \n\n", name);
+  printf("Name: %s \n\n", (char*)name);
   return;
   OpenFile *executable = fileSystem->Open(name);
   AddrSpace *space;

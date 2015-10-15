@@ -362,7 +362,30 @@ void PrintInt_Syscall(int wat){
 	printf("%i", wat);
 }
 
+/*************************************************************
+//Prints a String
+**************************************************************/
+void PrintString_Syscall(unsigned int vaddr, int length){
+	char *buf;		// Kernel buffer for output
+		
+		
+	if ( !(buf = new char[len]) ) {
+		printf("%s","Error allocating kernel buffer for write!\n");
+		return;
+	} else {
+		if ( copyin(vaddr,len,buf) == -1 ) {
+			printf("%s","Bad pointer passed to to PrintString: data not pinted.\n");
+			delete[] buf;
+			return;
+		}
+	}
 
+	for (int ii=0; ii<len; ii++) {
+		printf("%c",buf[ii]);
+	}
+
+	delete[] buf;
+}//End PrintStringSyscall
 
 
 
@@ -414,7 +437,12 @@ void ExceptionHandler(ExceptionType which) {
 			DEBUG('a', "PrintInt syscall.\n");
 			PrintInt_Syscall(machine->ReadRegister(4));
 		break;
-
+		
+		case SC_PrintString:
+			DEBUG('a', "PrintString syscall.\n");
+			PrintString_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+		break;
+		
 		case SC_Exit:
 			DEBUG('a', "Exit syscall.\n");
 			Exit_Syscall(machine->ReadRegister(4));

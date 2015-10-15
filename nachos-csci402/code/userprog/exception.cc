@@ -236,7 +236,7 @@ void Close_Syscall(int fd) {
 	Our implementations for proj2 above code was provided
 	*****************************************************/
 
-//#include "synch.h"
+#include "synch.h"
 //Lock* kernel_threadLock = new Lock("Kernel Thread Lock");//Idk maybe interupts are already off hopefully..?
 //Should this go here or elsewhere?
 void kernel_thread(int vaddr){

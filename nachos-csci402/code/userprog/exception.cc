@@ -272,8 +272,8 @@ void Fork_Syscall(int funct){
 ***********************************************************************/
 //Lock* kernel_exec_lock = new Lock("Kernel Exec lock for filename...");
 //char *kernel_execBUF = null;
-void kernel_exec(int name){
-
+void kernel_exec(int intName){
+	char* name = (char*)intName;
 	DEBUG('e', "Kernel_exec system call: FileName: %s \n\n", name);
 
 	OpenFile *executable = fileSystem->Open(name);
@@ -292,7 +292,7 @@ void kernel_exec(int name){
 
 		space->InitRegisters();   // set the initial register values
 		space->RestoreState();    // load page table register
-		delete[] (char*)name;
+		delete[] name;
 		machine->Run();     // jump to the user progam
 		ASSERT(FALSE);      // machine->Run never returns;
 					// the address space exits

@@ -297,7 +297,7 @@ void kernel_exec(int name){
 }
 
 SpaceId Exec_Syscall(unsigned int vaddr, int len){
-		DEBUG('e', "In exec syscall.\n");
+		DEBUG('e', "In exec syscall. vaddr: %i, len: %i\n", vaddr, len);
 
 		char *buf;   // Kernel buffer
 		
@@ -312,11 +312,10 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 				}
 		}
 
-		string name(buf);
 		printf("The String: ");
 		for(int i =0; i < len; i++)
-		printf("%s", buf[i]);
-	printf("\n");
+			printf("%s", buf[i]);
+		printf("\n");
 		return -1;
 
 		Thread* t;

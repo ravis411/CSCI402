@@ -236,14 +236,14 @@ void Close_Syscall(int fd) {
   Our implementations for proj2 above code was provided
   *****************************************************/
 
-#include "synch.h"
-Lock* kernel_threadLock = new Lock("Kernel Thread Lock");//Idk maybe interupts are already off hopefully..?
+//#include "synch.h"
+//Lock* kernel_threadLock = new Lock("Kernel Thread Lock");//Idk maybe interupts are already off hopefully..?
 //Should this go here or elsewhere?
 void kernel_thread(int vaddr){
   DEBUG('f', "IN kernel_thread.\n");
-  kernel_threadLock->Acquire();
+ // kernel_threadLock->Acquire();
   currentThread->space->Fork(vaddr);//add stack space to pagetable and init registers...
-  kernel_threadLock->Release();
+ // kernel_threadLock->Release();
   DEBUG('f', "End kernel_thread.\n");
   machine->Run();
   ASSERT(FALSE);

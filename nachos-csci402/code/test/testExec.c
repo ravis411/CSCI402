@@ -8,7 +8,7 @@
 
  int arry[arrySize];
  char welcomeString[] = "\nExec Syscall test...\n\n";
- char fileName[] = "../test/testExec";
+ char fileName[] = "../test/testFork";
 
 
 void function1(){

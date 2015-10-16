@@ -19,7 +19,7 @@ Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 BitMap *pageTableBitMap;    //Bitmap to track unused pages
-std::map<AddrSpace*, ProcessTableEntry*> processTable;
+//std::map<AddrSpace*, ProcessTableEntry*> processTable;
 
 
 ProcessTableEntry::ProcessTableEntry(AddrSpace* spc){
@@ -29,7 +29,60 @@ ProcessTableEntry::ProcessTableEntry(AddrSpace* spc){
 int ProcessTableEntry::getNumThreads(){return numThreads;}
 void ProcessTableEntry::addThread(){numThreads++;}
 void ProcessTableEntry::removeThread(){numThreads--; if(numThreads < 0){numThreads=0;}}
+ProcessTableEntry &ProcessTableEntry::operator=(const ProcessTableEntry& entry){
+    if(&entry != this) // check for self assignment
+    {
+        numThreads = entry.numThreads;
+        space = entry.space;
+    }
+    return *this;
+}
+bool ProcessTableEntry::operator==(const ProcessTableEntry& entry){
+    if(&entry == this)
+        return true;
+    if(space == entry.space)
+        return true;
+    return false;
+}
 
+
+ProcessTableClass::ProcessTableClass(){
+    numProcesses = 0;
+}
+int ProcessTableClass::getNumProcesses(){
+    return entries.size();
+}
+void ProcessTableClass::addProcess(AddrSpace* spc){
+    ProcessTableEntry* p = new ProcessTableEntry(spc);
+    //First check if its in the vector already...
+    for(auto it = entries.cbegin(); it != entries.cend(); ++it){
+        if( (*it) == (*p) ){
+            return; //This AddrSpace is already in the vector.
+        }
+    }
+    entries.push_back(p);
+}
+
+ProcessTableEntry* ProcessTableClass::getProcessEntry(AddrSpace* spc){
+    for(auto it = entries.cbegin(); it != entries.cend(); ++it){
+        if( it->space == spc){
+            return it;
+        }
+    }
+    return NULL;
+}
+
+bool deleteProcess(AddrSpace* spc){
+    for(auto it = entries.cbegin(); it != entries.cend(); ++it){
+        if( it->space == spc) ){
+            entries.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+ProcessTableClass* ProcessTable;
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
@@ -158,6 +211,7 @@ Initialize(int argc, char **argv)
 
     //Initialize the pageTableBitMap
     pageTableBitMap = new BitMap(NumPhysPages);
+    ProcessTable = new ProcessTableClass;
 
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C

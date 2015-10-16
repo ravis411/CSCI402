@@ -17,6 +17,8 @@
 #include "timer.h"
 #include "bitmap.h"
 #include <map>
+#include <vector>
+using std::vector;
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
@@ -40,9 +42,25 @@ public:
     int getNumThreads();
     void addThread();
     void removeThread();
+    ProcessTableEntry &ProcessTableEntry::operator=(const ProcessTableEntry& entry);
+	bool ProcessTableEntry::operator==(const ProcessTableEntry& entry);
 };
 
-extern std::map<AddrSpace*, ProcessTableEntry*> processTable;	//The ProcessTable
+class ProcessTableClass{
+public:
+	ProcessTableClass();
+	int getNumProcesses();
+	void addProcess(AddrSpace* spc);
+	ProcessTableEntry* getProcessEntry(AddrSpace* spc);
+	bool deleteProcess(AddrSpace* spc);
+private:
+	int numProcesses;
+	vector<ProcessTableEntry*> entries;
+};
+
+extern ProcessTableClass* ProcessTable;
+
+//extern std::map<AddrSpace*, ProcessTableEntry*> processTable;	//The ProcessTable
 
 #ifdef USER_PROGRAM
 #include "machine.h"

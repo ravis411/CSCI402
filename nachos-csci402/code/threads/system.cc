@@ -26,8 +26,8 @@ class ProcessTableEntry{
 public:
     AddrSpace* space;
     int numThreads;
-    ProcessTableEntry(AddrSpace* space){
-        this.space = space;
+    ProcessTableEntry(AddrSpace* spc){
+        space = spc;
         numThreads = 1;
     }
     int getNumThreads(){return numThreads;}

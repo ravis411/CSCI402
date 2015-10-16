@@ -336,8 +336,8 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 * Exit()
 *************************************************************************/
 void Exit_Syscall(int status){
-	//Minumum this must have 
-	currentThread->Finish();
+	
+	
 	//Case 1
 		//Not last thread in process
 		//reclaim 8 pages of stack
@@ -355,6 +355,9 @@ void Exit_Syscall(int status){
 		//for(pageTable)
 			//if valid clear
 		//locks/cvs match addspace* w/ process table
+	
+	//Minumum this must have 
+	currentThread->Finish();
 }
 
 

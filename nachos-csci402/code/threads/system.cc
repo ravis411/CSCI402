@@ -27,8 +27,8 @@ ProcessTableEntry::ProcessTableEntry(AddrSpace* spc){
     numThreads = 1;
 }
 int ProcessTableEntry::getNumThreads(){return numThreads;}
-void ProcessTableEntry::addThread(){numThreads++;}
-void ProcessTableEntry::removeThread(){numThreads--; if(numThreads < 0){numThreads=0;}}
+void ProcessTableEntry::addThread(){DEBUG('p', "Incremented numThreads in ProcessTableEntry.\n");numThreads++;}
+void ProcessTableEntry::removeThread(){DEBUG('p', "Dectremented numThreads from ProcessTableEntry.\n"); numThreads--; if(numThreads < 0){numThreads=0;}}
 ProcessTableEntry &ProcessTableEntry::operator=(const ProcessTableEntry& entry){
     if(&entry != this) // check for self assignment
     {
@@ -57,6 +57,7 @@ void ProcessTableClass::addProcess(AddrSpace* spc){
         }
     }
     entries.push_back(p);
+    DEBUG('p', "Added process to ProcessTable.\n");
 }
 
 ProcessTableEntry* ProcessTableClass::getProcessEntry(AddrSpace* spc){
@@ -71,6 +72,7 @@ ProcessTableEntry* ProcessTableClass::getProcessEntry(AddrSpace* spc){
 bool ProcessTableClass::deleteProcess(AddrSpace* spc){
     for(std::vector<ProcessTableEntry*>::iterator it = entries.begin() ; it != entries.end(); ++it){
         if( (*it)->space == spc ) {
+            DEBUG('p', "Deleted process from ProcessTable.\n");
             entries.erase(it);
             return true;
         }

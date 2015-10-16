@@ -43,6 +43,7 @@ StartProcess(char *filename)
     space->RestoreState();		// load page table register
 
     //processTable.insert(space, (new ProcessTableEntry(space)));
+    ProcessTable->addProcess(space);
 
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;

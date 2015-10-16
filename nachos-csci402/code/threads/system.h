@@ -42,8 +42,8 @@ public:
     int getNumThreads();
     void addThread();
     void removeThread();
-    ProcessTableEntry &ProcessTableEntry::operator=(const ProcessTableEntry& entry);
-	bool ProcessTableEntry::operator==(const ProcessTableEntry& entry);
+    ProcessTableEntry &operator=(const ProcessTableEntry& entry);
+	bool operator==(const ProcessTableEntry& lhs, const ProcessTableEntry& rhs);
 };
 
 class ProcessTableClass{

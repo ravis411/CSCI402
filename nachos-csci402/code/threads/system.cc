@@ -37,12 +37,8 @@ ProcessTableEntry &ProcessTableEntry::operator=(const ProcessTableEntry& entry){
     }
     return *this;
 }
-bool ProcessTableEntry::operator==(const ProcessTableEntry& entry){
-    if(&entry == this)
-        return true;
-    if(space == entry.space)
-        return true;
-    return false;
+bool ProcessTableEntry::operator==(const ProcessTableEntry& lhs, const ProcessTableEntry& rhs){
+    return lhs.space == rhs.space;
 }
 
 
@@ -65,7 +61,7 @@ void ProcessTableClass::addProcess(AddrSpace* spc){
 
 ProcessTableEntry* ProcessTableClass::getProcessEntry(AddrSpace* spc){
     for(std::vector<ProcessTableEntry*>::iterator it = entries.begin() ; it != entries.end(); ++it){
-        if( it->space == spc){
+        if( (*it)->space == spc){
             return it;
         }
     }

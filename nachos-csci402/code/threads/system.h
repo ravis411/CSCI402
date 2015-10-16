@@ -16,6 +16,7 @@
 #include "stats.h"
 #include "timer.h"
 #include "bitmap.h"
+#include <map>
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
@@ -30,6 +31,7 @@ extern Interrupt *interrupt;			// interrupt status
 extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 extern BitMap *pageTableBitMap;	//Bitmap to track unused pages
+extern std::map<AddrSpace*, ProcessTableEntry*> processTable;	//The ProcessTable
 
 #ifdef USER_PROGRAM
 #include "machine.h"

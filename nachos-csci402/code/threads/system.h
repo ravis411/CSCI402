@@ -31,9 +31,6 @@ extern Interrupt *interrupt;			// interrupt status
 extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 extern BitMap *pageTableBitMap;	//Bitmap to track unused pages
-
-extern std::map<AddrSpace*, ProcessTableEntry*> processTable;	//The ProcessTable
-
 class ProcessTableEntry{
 public:
     AddrSpace* space;
@@ -43,6 +40,7 @@ public:
     void addThread();
     void removeThread();
 };
+extern std::map<AddrSpace*, ProcessTableEntry*> processTable;	//The ProcessTable
 
 #ifdef USER_PROGRAM
 #include "machine.h"

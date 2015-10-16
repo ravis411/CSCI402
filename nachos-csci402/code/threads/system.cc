@@ -28,9 +28,7 @@ ProcessTableEntry::ProcessTableEntry(AddrSpace* spc){
 }
 int ProcessTableEntry::getNumThreads(){return numThreads;}
 void ProcessTableEntry::addThread(){numThreads++;}
-void ProcessTableEntry::removeThread(){numThreads--; if(numThreads < 0){numThreads=0;}};
-
-};
+void ProcessTableEntry::removeThread(){numThreads--; if(numThreads < 0){numThreads=0;}}
 
 
 #ifdef FILESYS_NEEDED

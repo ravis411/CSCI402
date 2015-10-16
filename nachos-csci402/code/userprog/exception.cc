@@ -243,6 +243,7 @@ void kernel_thread(int vaddr){
 	DEBUG('f', "IN kernel_thread.\n");
  // kernel_threadLock->Acquire();
 	currentThread->space->Fork(vaddr);//add stack space to pagetable and init registers...
+	processTable.[currentThread->space]->addThread();
  // kernel_threadLock->Release();
 	DEBUG('f', "End kernel_thread.\n");
 	machine->Run();
@@ -287,7 +288,7 @@ void kernel_exec(int intName){
 		space = new AddrSpace(executable);
 
 		currentThread->space = space;
-
+		processTable.insert(space, (new ProcessTableEntry(space)));
 		delete executable;      // close file
 
 		space->InitRegisters();   // set the initial register values

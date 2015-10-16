@@ -182,7 +182,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     }
     
 
-    processTable.insert(this, (new ProcessTableEntry(this)) );
+    processTable.insert(*this, (new ProcessTableEntry(*this)) );
 
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
@@ -277,7 +277,7 @@ AddrSpace::Fork(int nextInstruction)
     machine->WriteRegister(NextPCReg, nextInstruction + 4);
     RestoreState();
 
-    processTable[this]->addThread();
+    processTable[*this]->addThread();
 
     (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
 

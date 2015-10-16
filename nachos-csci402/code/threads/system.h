@@ -16,9 +16,9 @@
 #include "stats.h"
 #include "timer.h"
 #include "bitmap.h"
-#include <map>
+//#include <map>
 #include <vector>
-using std::vector;
+using namespace std;
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,

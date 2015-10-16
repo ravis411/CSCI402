@@ -37,8 +37,8 @@ ProcessTableEntry &ProcessTableEntry::operator=(const ProcessTableEntry& entry){
     }
     return *this;
 }
-bool ProcessTableEntry::operator==(const ProcessTableEntry& rhs){
-    return this.space == rhs.space;
+bool ProcessTableEntry::operator == (const ProcessTableEntry &rhs) const{
+    return space == rhs.space;
 }
 
 
@@ -52,7 +52,7 @@ void ProcessTableClass::addProcess(AddrSpace* spc){
     ProcessTableEntry* p = new ProcessTableEntry(spc);
     //First check if its in the vector already...
     for(std::vector<ProcessTableEntry*>::iterator it = entries.begin() ; it != entries.end(); ++it){
-        if( (*it) == (*p) ){
+        if( *(*it) == (*p) ){
             return; //This AddrSpace is already in the vector.
         }
     }
@@ -62,7 +62,7 @@ void ProcessTableClass::addProcess(AddrSpace* spc){
 ProcessTableEntry* ProcessTableClass::getProcessEntry(AddrSpace* spc){
     for(std::vector<ProcessTableEntry*>::iterator it = entries.begin() ; it != entries.end(); ++it){
         if( (*it)->space == spc){
-            return it;
+            return *it;
         }
     }
     return NULL;
@@ -70,7 +70,7 @@ ProcessTableEntry* ProcessTableClass::getProcessEntry(AddrSpace* spc){
 
 bool ProcessTableClass::deleteProcess(AddrSpace* spc){
     for(std::vector<ProcessTableEntry*>::iterator it = entries.begin() ; it != entries.end(); ++it){
-        if( it->space == spc ) {
+        if( (*it)->space == spc ) {
             entries.erase(it);
             return true;
         }

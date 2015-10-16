@@ -20,18 +20,15 @@
 // All rights reserved.  See copyright.h for copyright notice and limitation 
 // of liability and disclaimer of warranty provisions.
 #include <stdio.h>
-#include <iostream>
 #include "copyright.h"
 #include "interrupt.h"
 #include "system.h"
-using namespace std;
-// String definitions for debugging messages
-#include <stdio.h>
 #include <iostream>
+using namespace std;
 static char *intLevelNames[] = { "off", "on"};
 static char *intTypeNames[] = { "timer", "disk", "console write", 
 			"console read", "network send", "network recv"};
-using namespace std;
+
 //----------------------------------------------------------------------
 // PendingInterrupt::PendingInterrupt
 // 	Initialize a hardware device interrupt that is to be scheduled 

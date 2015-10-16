@@ -30,9 +30,10 @@
 // of liability and disclaimer of warranty provisions.
 
 #include "copyright.h"
+#include "system.h"
 #include "machine.h"
 #include "addrspace.h"
-#include "system.h"
+
 
 // Routines for converting Words and Short Words to and from the
 // simulated machine's format of little endian.  These end up

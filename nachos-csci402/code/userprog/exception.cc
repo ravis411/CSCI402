@@ -238,17 +238,17 @@ void Close_Syscall(int fd) {
 
 #include "synch.h"
 Lock kernel_threadLock("Kernel Thread Lock");
-int forkCalled = 0;
+//int forkCalled = 0;
 
 void kernel_thread(int vaddr){
 	DEBUG('f', "IN kernel_thread.\n");
  	
 	currentThread->space->Fork(vaddr);//add stack space to pagetable and init registers...
 
-	(ProcessTable->getProcessEntry(currentThread->space))->addThread();
-	kernel_threadLock.Acquire();
-	forkCalled--;
-  kernel_threadLock.Release();
+	//(ProcessTable->getProcessEntry(currentThread->space))->addThread();
+	//kernel_threadLock.Acquire();
+	//forkCalled--;
+  //kernel_threadLock.Release();
 	DEBUG('f', "End kernel_thread.\n");
 	machine->Run();
 	ASSERT(FALSE);
@@ -259,7 +259,7 @@ void kernel_thread(int vaddr){
  */
 void Fork_Syscall(int funct){
 	kernel_threadLock.Acquire();
-	forkCalled++;
+	(ProcessTable->getProcessEntry(currentThread->space))->addThread();
   kernel_threadLock.Release();
 	Thread* t;
 	DEBUG('f', "In fork syscall. funct = %i\n", funct);

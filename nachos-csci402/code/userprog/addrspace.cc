@@ -180,8 +180,8 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 
     //executable->ReadAt(&(machine->mainMemory[P]), PageSize, noffH.initData.inFileAddr);
     }
-    
-    ProcessTableEntry* p = new ProcessTableEntry(*this);
+    AddrSpace* s = *this;
+    ProcessTableEntry* p = new ProcessTableEntry(s);
     processTable.insert(*this, p );
 
 // zero out the entire address space, to zero the unitialized data segment 

@@ -353,7 +353,7 @@ void Exit_Syscall(int status){
 		//interupt->Halt();//shut downs nachos
 	else if(p->getNumThreads() == 1 && ProcessTable->getNumProcesses() == 1){
 		DEBUG('E', "LAST THREAD LAST PROCESS\n");
-		interupt->Halt();
+		interrupt->Halt();
 	}
 	//Case 3
 		//Last executing thread in a process - not last process

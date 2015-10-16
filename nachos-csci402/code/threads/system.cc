@@ -72,9 +72,9 @@ ProcessTableEntry* ProcessTableClass::getProcessEntry(AddrSpace* spc){
     return NULL;
 }
 
-bool deleteProcess(AddrSpace* spc){
+bool ProcessTableClass::deleteProcess(AddrSpace* spc){
     for(auto it = entries.cbegin(); it != entries.cend(); ++it){
-        if( it->space == spc) ){
+        if( it->space == spc ) {
             entries.erase(it);
             return true;
         }

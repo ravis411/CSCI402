@@ -37,8 +37,8 @@ ProcessTableEntry &ProcessTableEntry::operator=(const ProcessTableEntry& entry){
     }
     return *this;
 }
-bool ProcessTableEntry::operator==(const ProcessTableEntry& lhs, const ProcessTableEntry& rhs){
-    return lhs.space == rhs.space;
+bool ProcessTableEntry::operator==(const ProcessTableEntry& rhs){
+    return this.space == rhs.space;
 }
 
 

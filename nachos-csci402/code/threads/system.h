@@ -43,7 +43,7 @@ public:
     void addThread();
     void removeThread();
     ProcessTableEntry &operator=(const ProcessTableEntry& entry);
-	bool operator==(const ProcessTableEntry& lhs, const ProcessTableEntry& rhs);
+    bool operator == (const ProcessTableEntry &) const;
 };
 
 class ProcessTableClass{

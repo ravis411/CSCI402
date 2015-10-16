@@ -182,7 +182,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     }
     
 
-    processTable.insert(this, (new processTableEntry(this)) );
+    processTable.insert(this, (new ProcessTableEntry(this)) );
 
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment

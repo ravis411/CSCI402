@@ -22,17 +22,13 @@ BitMap *pageTableBitMap;    //Bitmap to track unused pages
 std::map<AddrSpace*, ProcessTableEntry*> processTable;
 
 
-class ProcessTableEntry{
-public:
-    AddrSpace* space;
-    int numThreads;
-    ProcessTableEntry(AddrSpace* spc){
-        space = spc;
-        numThreads = 1;
-    }
-    int getNumThreads(){return numThreads;}
-    void addThread(){numThreads++;}
-    void removeThread(){numThreads--; if(numThreads < 0){numThreads=0;}};
+ProcessTableEntry::ProcessTableEntry(AddrSpace* spc){
+    space = spc;
+    numThreads = 1;
+}
+int ProcessTableEntry::getNumThreads(){return numThreads;}
+void ProcessTableEntry::addThread(){numThreads++;}
+void ProcessTableEntry::removeThread(){numThreads--; if(numThreads < 0){numThreads=0;}};
 
 };
 

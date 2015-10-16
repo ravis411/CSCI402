@@ -236,16 +236,19 @@ void Close_Syscall(int fd) {
 	Our implementations for proj2 above code was provided
 	*****************************************************/
 
-//#include "synch.h"
-//Lock* kernel_threadLock = new Lock("Kernel Thread Lock");//Idk maybe interupts are already off hopefully..?
-//Should this go here or elsewhere?
+#include "synch.h"
+Lock kernel_threadLock("Kernel Thread Lock");
+int forkCalled = 0;
+
 void kernel_thread(int vaddr){
 	DEBUG('f', "IN kernel_thread.\n");
- // kernel_threadLock->Acquire();
+ 	
 	currentThread->space->Fork(vaddr);//add stack space to pagetable and init registers...
-	//processTable[currentThread->space]->addThread();
+
 	(ProcessTable->getProcessEntry(currentThread->space))->addThread();
- // kernel_threadLock->Release();
+	kernel_threadLock->Acquire();
+	forkCalled--;
+  kernel_threadLock->Release();
 	DEBUG('f', "End kernel_thread.\n");
 	machine->Run();
 	ASSERT(FALSE);
@@ -255,6 +258,9 @@ void kernel_thread(int vaddr){
  * as the current thread.
  */
 void Fork_Syscall(int funct){
+	kernel_threadLock->Acquire();
+	forkCalled++;
+  kernel_threadLock->Release();
 	Thread* t;
 	DEBUG('f', "In fork syscall. funct = %i\n", funct);
 	t = new Thread("Forked thread.");
@@ -266,7 +272,8 @@ void Fork_Syscall(int funct){
 }//end Fork_Syscall
 
 
-
+Lock execLock("ExecLock");
+int execCalled = 0;
 
 /************************************************************************
 * Run the executable, stored in the Nachos file "name", and return the  *
@@ -296,6 +303,9 @@ void kernel_exec(int intName){
 		space->InitRegisters();   // set the initial register values
 		space->RestoreState();    // load page table register
 		delete[] name;
+		execLock.Acquire();
+		execCalled--;
+		execLock.Release();
 		machine->Run();     // jump to the user progam
 		ASSERT(FALSE);      // machine->Run never returns;
 					// the address space exits
@@ -303,6 +313,9 @@ void kernel_exec(int intName){
 }
 
 SpaceId Exec_Syscall(unsigned int vaddr, int len){
+		execLock.Acquire();
+		execCalled++;
+		execLock.Release();
 		DEBUG('e', "In exec syscall. vaddr: %i, len: %i\n", vaddr, len);
 
 		char *buf;   // Kernel buffer
@@ -337,7 +350,9 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 *************************************************************************/
 void Exit_Syscall(int status){
 	ProcessTableEntry* p = ProcessTable->getProcessEntry(currentThread->space);
-	
+	execLock.Acquire();
+	//kernel_threadLock.Acquire();//TODO: RACE CONDITION THIS WONT WORK!!!?
+
 	//Case 1
 		//Not last thread in process
 		//reclaim 8 pages of stack
@@ -351,7 +366,7 @@ void Exit_Syscall(int status){
 	//Case 2
 		//Last executing thread in last process
 		//interupt->Halt();//shut downs nachos
-	else if(p->getNumThreads() == 1 && ProcessTable->getNumProcesses() == 1){
+	else if(p->getNumThreads() == 1 && ProcessTable->getNumProcesses() == 1 && !execCalled){
 		DEBUG('E', "LAST THREAD LAST PROCESS\n");
 		interrupt->Halt();
 	}
@@ -367,7 +382,8 @@ void Exit_Syscall(int status){
 		DEBUG('E', "Last thread in process.\n");
 		ProcessTable->deleteProcess(currentThread->space);
 	}
-
+	execLock->Release();
+	//kernel_threadLock.Release();
 	currentThread->Finish();
 }
 

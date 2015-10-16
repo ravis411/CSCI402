@@ -336,7 +336,7 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 * Exit()
 *************************************************************************/
 void Exit_Syscall(int status){
-	
+	ProcessTableEntry* p = ProcessTable->getProcessEntry(currentThread->space);
 	
 	//Case 1
 		//Not last thread in process
@@ -344,19 +344,30 @@ void Exit_Syscall(int status){
 		//vpn,ppn,valid
 		//memoryBitMap->Clear(ppn)
 		//valid = false
-
+	if(p->getNumThreads() > 1){
+		p->removeThread();
+		DEBUG('E', "Not last last thread. Left: %i \n", p->getNumThreads());
+	}
 	//Case 2
 		//Last executing thread in last process
 		//interupt->Halt();//shut downs nachos
-
+	else if(p->getNumThreads() == 1 && ProcessTable->getNumProcesses() == 1){
+		DEBUG('E', "LAST THREAD LAST PROCESS\n");
+		interupt->Halt();
+	}
 	//Case 3
 		//Last executing thread in a process - not last process
 		//reclaim all unreclaimed memory
 		//for(pageTable)
 			//if valid clear
 		//locks/cvs match addspace* w/ process table
-	
-	//Minumum this must have 
+
+	//Minumum this must have
+	else{
+		DEBUG('E', "Last thread in process.\n");
+		ProcessTable->deleteProcess(currentThread->space);
+	}
+
 	currentThread->Finish();
 }
 

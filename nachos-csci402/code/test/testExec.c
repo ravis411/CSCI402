@@ -17,5 +17,6 @@ int main() {
 	
 PrintString("\n", 1);
 PrintString("\n", 1);
+Exit(0);
 }
 

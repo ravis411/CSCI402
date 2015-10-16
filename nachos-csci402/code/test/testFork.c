@@ -80,5 +80,7 @@ Write("\n", 1, ConsoleOutput);
   Fork(thread4);
 	
 	Write("\n", 1, ConsoleOutput);
+
+  Exit(0);
 }
 

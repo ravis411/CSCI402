@@ -184,6 +184,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
             executable->ReadAt( &(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + (i * PageSize) );
             pageTable[i].stackPage = FALSE;
         }else{//Stack
+            DEBUG('a', "Initializing stack page, vpn: %i\n", i); 
             pageTable[i].stackPage = TRUE;
         }
         pageTable[i].currentThreadID = currentThread->getThreadID();
@@ -211,7 +212,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 			noffH.initData.size, noffH.initData.inFileAddr);
     }
     */
-    DEBUG('a', "Address space,initialized with wiht threadID: %i\n", currentThread->getThreadID()); 
+    DEBUG('a', "Address space,initialized with with threadID: %i\n", currentThread->getThreadID()); 
 }//End AddrSpace Constructor
 
 

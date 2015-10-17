@@ -24,6 +24,10 @@
 					// execution stack, for detecting 
 					// stack overflows
 
+#ifdef USER_PROGRAM
+Thread::threadIDthreadIDCount = 0;
+#endif
+
 //----------------------------------------------------------------------
 // Thread::Thread
 // 	Initialize a thread control block, so that we can then call
@@ -31,7 +35,6 @@
 //
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
-
 Thread::Thread(char* threadName)
 {
     name = threadName;

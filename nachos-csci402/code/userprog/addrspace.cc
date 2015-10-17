@@ -300,10 +300,8 @@ AddrSpace::Fork(int nextInstruction)
 ////////////////////////////////////////////////////////////////////
 void AddrSpace::Exit(){
     DEBUG('E', "In AddrSpace::Exit\n");
-    unsigned int stackPagesCleared, currentThreadID;
-
-    stackPagesCleared = 0;
-    currentThreadID = currentThread->getThreadID();
+    unsigned int stackPagesCleared = 0;
+    int currentThreadID = currentThread->getThreadID();
 
     //Should we really disable interrupts?
     // Would be better to acquire a lock but that has to be acquired wherever changes to these values take place...
@@ -315,11 +313,11 @@ void AddrSpace::Exit(){
     //valid = false
 
     //We need to find where our 8 pages are...This should not be dont like this...but whatever for now...
-    for(int i = numNonStackPages; i < numPages; i++){
+    for(unsigned int i = numNonStackPages; i < numPages; i++){
         if(pageTable[i].stackPage == TRUE && pageTable[i].currentThreadID == currentThreadID){
             pageTable[i].valid = FALSE;
-            pageTableBitMap->Clear(pageTable[i].ppn);
-            pageTable[i].ppn = -1;
+            pageTableBitMap->Clear(pageTable[i].physicalPage);
+            pageTable[i].physicalPage = -1;
             stackPagesCleared++;
         }
         if(stackPagesCleared == (UserStackSize * PageSize)){

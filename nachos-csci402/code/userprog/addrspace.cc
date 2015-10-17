@@ -211,6 +211,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 			noffH.initData.size, noffH.initData.inFileAddr);
     }
     */
+    DEBUG('a', "Address space,initialized with wiht threadID: %i\n", currentThread->getThreadID()); 
 }//End AddrSpace Constructor
 
 

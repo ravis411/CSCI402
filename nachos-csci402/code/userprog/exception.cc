@@ -351,7 +351,7 @@ SpaceId Exec_Syscall(unsigned int vaddr, int len){
 void Exit_Syscall(int status){
 	ProcessTableEntry* p = ProcessTable->getProcessEntry(currentThread->space);
 	execLock.Acquire();
-	//kernel_threadLock.Acquire();//TODO: RACE CONDITION THIS WONT WORK!!!?
+	kernel_threadLock.Acquire();//TODO: RACE CONDITION THIS WONT WORK!!!?
 
 	//Case 1
 		//Not last thread in process
@@ -383,7 +383,8 @@ void Exit_Syscall(int status){
 		ProcessTable->deleteProcess(currentThread->space);
 	}
 	execLock.Release();
-	//kernel_threadLock.Release();
+	kernel_threadLock.Release();
+	
 	currentThread->Finish();
 }
 

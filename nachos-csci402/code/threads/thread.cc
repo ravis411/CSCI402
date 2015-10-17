@@ -25,7 +25,7 @@
 					// stack overflows
 
 #ifdef USER_PROGRAM
-Thread::threadIDthreadIDCount = 0;
+int Thread::threadIDCount = 0;
 #endif
 
 //----------------------------------------------------------------------

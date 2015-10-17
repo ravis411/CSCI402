@@ -40,6 +40,9 @@ Thread::Thread(char* threadName)
     status = JUST_CREATED;
 #ifdef USER_PROGRAM
     space = NULL;
+     IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+     threadID = threadIDCount++;
+    (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
 #endif
 }
 
@@ -286,6 +289,12 @@ Thread::StackAllocate (VoidFunctionPtr func, int arg)
 #ifdef USER_PROGRAM
 #include "machine.h"
 
+//Returns the thread ID
+int Thread::getThreadID(){
+    return threadID;
+}
+
+
 //----------------------------------------------------------------------
 // Thread::SaveUserState
 //	Save the CPU state of a user program on a context switch.
@@ -294,7 +303,6 @@ Thread::StackAllocate (VoidFunctionPtr func, int arg)
 //	one for its state while executing user code, one for its state 
 //	while executing kernel code.  This routine saves the former.
 //----------------------------------------------------------------------
-
 void
 Thread::SaveUserState()
 {

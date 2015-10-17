@@ -361,7 +361,7 @@ void Exit_Syscall(int status){
 		//valid = false
 	if(p->getNumThreads() > 1){
 		p->removeThread();
-		DEBUG('E', "Not last last thread. Left: %i \n", p->getNumThreads());
+		DEBUG('E', "Not the last thread. Left: %i \n", p->getNumThreads());
 	}
 	//Case 2
 		//Last executing thread in last process
@@ -384,7 +384,7 @@ void Exit_Syscall(int status){
 	}
 	execLock.Release();
 	kernel_threadLock.Release();
-	
+
 	currentThread->Finish();
 }
 

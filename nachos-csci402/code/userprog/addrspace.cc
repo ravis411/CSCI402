@@ -83,6 +83,7 @@ void *Table::Remove(int i) {
 //  PageTableEntry
 ///////////////////////////////////////////////////////////////////
 PageTableEntry &PageTableEntry::operator=(const PageTableEntry& entry){
+    DEBUG('f', "PageTableEntry assignment opperator.\n");
     if(&entry != this) // check for self assignment
     {
         virtualPage = entry.virtualPage;
@@ -91,6 +92,8 @@ PageTableEntry &PageTableEntry::operator=(const PageTableEntry& entry){
         use = entry.use;
         dirty = entry.dirty;
         readOnly = entry.readOnly;
+        stackPage = entry.stackPage;
+        currentThreadID = entry.currentThreadID;
     }
     return *this;
 }
@@ -151,7 +154,8 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     ASSERT(noffH.noffMagic == NOFFMAGIC);
 
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size ;
-    numPages = divRoundUp(size, PageSize) + divRoundUp(UserStackSize,PageSize);
+    numNonStackPages = divRoundUp(size, PageSize);
+    numPages = numNonStackPages + divRoundUp(UserStackSize,PageSize);
                                                 // we need to increase the size
 						// to leave room for the stack
     size = numPages * PageSize;
@@ -165,6 +169,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 					numPages, size);
 // first, set up the translation 
     pageTable = new PageTableEntry[numPages];
+    
     for (i = 0; i < numPages; i++) {
         int ppn = FindPPN();//The PPN of an unused page.
     	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
@@ -175,11 +180,17 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     	pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
 					// a separate page, we could set its 
 					// pages to be read-only
-
-    executable->ReadAt( &(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + (i * PageSize) );
-
-    //executable->ReadAt(&(machine->mainMemory[P]), PageSize, noffH.initData.inFileAddr);
+        if(i < numNonStackPages){//Not stack
+            executable->ReadAt( &(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + (i * PageSize) );
+            pageTable[i].stackPage = FALSE;
+        }else{//Stack
+            pageTable[i].stackPage = TRUE;
+        }
+        pageTable[i].currentThreadID = currentThread->getThreadID();
     }
+
+    //We need to remember where this thread's stack is...
+
 
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
@@ -253,7 +264,7 @@ AddrSpace::Fork(int nextInstruction)
     //copy old table
     PageTableEntry* newPageTable = new PageTableEntry[newNumPages];
     for(unsigned int i = 0; i < numPages; i++){
-        newPageTable[i] = pageTable[i]; //Overloaded = operator now does a deep copy
+        (newPageTable[i]) = (pageTable[i]); //Overloaded = operator now does a deep copy
     }
     delete pageTable;
     pageTable = newPageTable;
@@ -266,6 +277,8 @@ AddrSpace::Fork(int nextInstruction)
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;
+        pageTable[i].currentThreadID = currentThread->getThreadID();
+        pageTable[i].stackPage = TRUE;
     }
 
     numPages = newNumPages;
@@ -277,7 +290,51 @@ AddrSpace::Fork(int nextInstruction)
     (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
 
     DEBUG('f', "End AddrSpace::Fork\n");
-}
+}//End Fork
+
+
+////////////////////////////////////////////////////////////////////
+// Exit()
+//
+//  Removes the stack for the current thread.
+////////////////////////////////////////////////////////////////////
+void AddrSpace::Exit(){
+    DEBUG('E', "In AddrSpace::Exit\n");
+    unsigned int stackPagesCleared, currentThreadID;
+
+    stackPagesCleared = 0;
+    currentThreadID = currentThread->getThreadID();
+
+    //Should we really disable interrupts?
+    // Would be better to acquire a lock but that has to be acquired wherever changes to these values take place...
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+
+    //reclaim 8 pages of stack
+    //vpn,ppn,valid
+    //memoryBitMap->Clear(ppn)
+    //valid = false
+
+    //We need to find where our 8 pages are...This should not be dont like this...but whatever for now...
+    for(int i = numNonStackPages; i < numPages; i++){
+        if(pageTable[i].stackPage == TRUE && pageTable[i].currentThreadID == currentThreadID){
+            pageTable[i].valid = FALSE;
+            pageTableBitMap->Clear(pageTable[i].ppn);
+            pageTable[i].ppn = -1;
+            stackPagesCleared++;
+        }
+        if(stackPagesCleared == (UserStackSize * PageSize)){
+            break;
+        }
+    }
+
+
+
+    (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+
+    ASSERT( stackPagesCleared == (UserStackSize * PageSize) );
+    DEBUG('E', "End AddrSpace::Exit\n");
+
+}//End Exit
 
 
 

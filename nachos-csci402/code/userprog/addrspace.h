@@ -25,7 +25,10 @@
 
 class PageTableEntry: public TranslationEntry{
     public:
-    // Assignment operator
+    bool stackPage; //True if this is a stack page...Should be deleted when this thread is removed..?
+    int currentThreadID;    //The currentThreadID
+
+    // Assignment operator does a deep copy
     PageTableEntry &operator=(const PageTableEntry& entry);
 };
 
@@ -45,11 +48,13 @@ class AddrSpace {
     Table fileTable;			// Table of openfiles
 
     void Fork(int nextInstruction);//Can be called to add a stack
+    void Exit();//Deletes 8 pages of stack for current thread.
 
  private:
     PageTableEntry *pageTable;	// Assume linear page table translation
 					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
+    unsigned int numNonStackPages;
 					// address space
     int FindPPN();  //Returns a ppn if found otherwise prints a message and halts nachos
 };

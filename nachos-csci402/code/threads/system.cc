@@ -18,6 +18,7 @@ Interrupt *interrupt;			// interrupt status
 Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
+#ifdef USER_PROGRAM
 BitMap *pageTableBitMap;    //Bitmap to track unused pages
 //std::map<AddrSpace*, ProcessTableEntry*> processTable;
 
@@ -81,6 +82,7 @@ bool ProcessTableClass::deleteProcess(AddrSpace* spc){
 }
 
 ProcessTableClass* ProcessTable;
+#endif
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
@@ -206,11 +208,11 @@ Initialize(int argc, char **argv)
     // object to save its state. 
     currentThread = new Thread("main");		
     currentThread->setStatus(RUNNING);
-
+#ifdef USER_PROGRAM
     //Initialize the pageTableBitMap
     pageTableBitMap = new BitMap(NumPhysPages);
     ProcessTable = new ProcessTableClass;
-
+#endif
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C
     
@@ -245,6 +247,7 @@ Cleanup()
     
 #ifdef USER_PROGRAM
     delete machine;
+delete pageTableBitMap;
 #endif
 
 #ifdef FILESYS_NEEDED
@@ -258,7 +261,6 @@ Cleanup()
     delete timer;
     delete scheduler;
     delete interrupt;
-    delete pageTableBitMap;
     
     Exit(0);
 }

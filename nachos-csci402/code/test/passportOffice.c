@@ -517,7 +517,7 @@ void Customer(){
     }
     else if( !pictureClerkDone ){
       /*Go to the picture clerk*/
-      pictureClerkDone = customerPictureClerkInteraction(SSN, &money);
+      pictureClerkDone = customerPictureClerkInteraction(SSN, &money, 0);
     }/*
     else if(!passportClerkDone){
       passportClerkDone = customerPassportClerkInteraction(SSN, money);

@@ -370,7 +370,7 @@ int customerPictureClerkInteraction(int SSN, int *money, int VIP){
       pictureClerkLineCount[myLine]++;
       /*printf("%s %i has gotten in regular line for PictureClerk %i.\n", myType, SSN, myLine);*/
        Acquire(printLock);
-          PrintString(myType, sizeof(myType));
+          PrintString(myType, 8);
           PrintString(" ", 1);
           PrintInt(SSN);
           PrintString(" has gotten in regular line for PictureClerk ", 
@@ -389,7 +389,7 @@ int customerPictureClerkInteraction(int SSN, int *money, int VIP){
       pictureClerkBribeLineCount[myLine]++;
       /*printf("%s %i has gotten in bribe line for PictureClerk %i.\n", myType, SSN, myLine);*/
       Acquire(printLock);
-          PrintString(myType, sizeof(myType));
+          PrintString(myType, 8);
           PrintString(" ", 1);
           PrintInt(SSN);
           PrintString(" has gotten in bribe line for PictureClerk ", 
@@ -416,7 +416,7 @@ int customerPictureClerkInteraction(int SSN, int *money, int VIP){
  
   pictureClerkSharedDataSSN[myLine] = SSN;
   Acquire(printLock);
-      PrintString(myType, sizeof(myType));
+      PrintString(myType, 8);
       PrintString(" ", 1);
       PrintInt(SSN);
       PrintString(" has given SSN ", sizeof(" has given SSN "));
@@ -434,7 +434,7 @@ int customerPictureClerkInteraction(int SSN, int *money, int VIP){
   while(pictureClerkSharedDataPicture[myLine] == 0) {
     if(Rand()%10 > 7) {
       Acquire(printLock);
-          PrintString(myType, sizeof(myType));
+          PrintString(myType, 8);
           PrintString(" ", 1);
           PrintInt(SSN);
           PrintString(" does not like their picture from PictureClerk ",
@@ -450,7 +450,7 @@ int customerPictureClerkInteraction(int SSN, int *money, int VIP){
     else {
       /*printf("%s %i does like their picture from PictureClerk %i.\n", myType, SSN, myLine);*/
       Acquire(printLock);
-          PrintString(myType, sizeof(myType));
+          PrintString(myType, 8);
           PrintString(" ", 1);
           PrintInt(SSN);
           PrintString(" does like their picture from PictureClerk ",
@@ -472,6 +472,106 @@ int customerPictureClerkInteraction(int SSN, int *money, int VIP){
 
 
 
+int customerPassportClerkInteraction(int SSN, int *money, int VIP){
+  int myLine = -1;
+  char* myType = MYTYPE(VIP);
+  int bribe = (money > 500) && (Rand()%2) && !VIP;
+
+  Acquire(passportClerkLineLock);
+
+
+  if(!bribe){
+    myLine = pickShortestLine(passportClerkLineCount, passportClerkState);
+  }else{ 
+    myLine = pickShortestLine(passportClerkBribeLineCount, passportClerkState);
+  }
+
+  if(passportClerkState[myLine] != AVAILABLE){
+    if(!bribe){
+      passportClerkLineCount[myLine]++;
+      Acquire(printLock);
+          PrintString(myType, 8);
+          PrintString(" ", 1);
+          PrintInt(SSN);
+          PrintString(" has gotten in regular line for PassportClerk ", 
+              sizeof(" has gotten in regular line for PassportClerk ") );
+          PrintInt(myLine);
+          PrintString(".\n", 2);
+      Release(printLock);
+      Wait(passportClerkLineCV[myLine], passportClerkLineLock);
+      passportClerkLineCount[myLine]--;
+      if(passportClerkState[myLine] != SIGNALEDCUSTOMER){
+        Release(passportClerkLineLock);
+        if(customerCheckSenator(SSN))
+          return false;
+      }
+    }else{
+      passportClerkBribeLineCount[myLine]++;
+      Acquire(printLock);
+          PrintString(myType, 8);
+          PrintString(" ", 1);
+          PrintInt(SSN);
+          PrintString(" has gotten in bribe line for PassportClerk ", 
+              sizeof(" has gotten in bribe line for PassportClerk ") );
+          PrintInt(myLine);
+          PrintString(".\n", 2);
+      Release(printLock);
+      Wait(passportClerkBribeLineCV[myLine], passportClerkLineLock);
+      passportClerkBribeLineCount[myLine]--;
+      if(passportClerkState[myLine] != SIGNALEDCUSTOMER){
+        Release(passportClerkLineLock);
+        if(customerCheckSenator(SSN))
+          return false;
+      }
+      money -= 500;
+    }
+  }
+
+
+  passportClerkState[myLine] = BUSY;
+  Release(passportClerkLineLock);
+
+  Acquire(passportClerkLock[myLine]);
+
+
+  passportClerkSharedDataSSN[myLine] = SSN;
+  Acquire(printLock);
+      PrintString(myType, 8);
+      PrintString(" ", 1);
+      PrintInt(SSN);
+      PrintString(" has given SSN ", 
+          sizeof(" has given SSN ") );
+      PrintInt(SSN);
+      PrintString(" to PassportClerk ", sizeof(" to PassportClerk "));
+      PrintInt(myLine);
+      PrintString(".\n", 2);
+  Release(printLock);
+  Signal(passportClerkCV[myLine], passportClerkLock[myLine]);
+
+
+  Wait(passportClerkCV[myLine], passportClerkLock[myLine]);
+  if(passportPunishment[SSN] == 1) {
+    Acquire(printLock);
+      PrintString(myType, 8);
+      PrintString(" ", 1);
+      PrintInt(SSN);
+      PrintString(" has gone to PassportClerk ", 
+          sizeof(" has gone to PassportClerk ") );
+      PrintInt(myLine);
+      PrintString(" to PassportClerk ", sizeof(" to PassportClerk "));
+      PrintInt(myLine);
+      PrintString(" too soon. They are going to the back of the line.\n", 
+           sizeof(" too soon. They are going to the back of the line.\n"));
+  Release(printLock);
+    Release(passportClerkLock[myLine]);
+    return false;
+  }
+
+  Release(passportClerkLock[myLine]);
+
+  return true;
+
+}/*//End of customerPassportClerkInteraction*/
 
 
 
@@ -998,14 +1098,173 @@ void PictureClerk(){
 
 
 
+void passportClerkcheckAndGoOnBreak(int myLine){
+
+  int freeOrAvailable = false;
+  int i;
+  for(i = 0; i < CLERKCOUNT; i++){
+    if(i != myLine && ( passportClerkState[i] == AVAILABLE || passportClerkState[i] == BUSY ) ){
+      freeOrAvailable = true;
+      break;
+    }
+  }
+
+  if(freeOrAvailable){
+    passportClerkState[myLine] = ONBREAK;
+    Acquire(printLock);
+      PrintString("PassportClerk ", sizeof("PassportClerk ") );
+      PrintInt(myLine);
+      PrintString(" is going on break.\n", sizeof(" is going on break.\n") );
+    Release(printLock);
+    Wait(passportClerkBreakCV, passportClerkLineLock);
+    passportClerkState[myLine] = BUSY;
+    Acquire(printLock);
+      PrintString("PassportClerk ", sizeof("PassportClerk ") );
+      PrintInt(myLine);
+      PrintString(" is coming off break.\n", sizeof(" is coming off break.\n") );
+    Release(printLock);
+  }else{
+
+    Release(passportClerkLineLock);
+
+    Acquire(managerLock);
+    if(checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){Release(managerLock); Exit(0);}
+    Release(managerLock);
+    Yield();
+    Acquire(passportClerkLineLock);
+  }
+  /*passportClerkState[myLine] = AVAILABLE;*/
+}
+
+int PassportGetMyLine(){
+  int myLine;
+  Acquire(PassportMyLineLock);
+  myLine = PassportMyLine++;
+  Release(PassportMyLineLock);
+  return myLine;
+}
+
+
+void PassportClerk(){
+  int myLine;
+  int money = 0;
+  int customerFromLine;/*0 no line, 1 bribe line, 2 regular line*/
+  int i;
+  int customerSSN;
+  
+  myLine = PassportGetMyLine();
+
+  while(true){
+
+    if(clerkCheckForSenator()) continue; 
+
+    Acquire(passportClerkLineLock);
+
+    if(passportClerkBribeLineCount[myLine] > 0){
+      customerFromLine = 1;
+      Signal(passportClerkBribeLineCV[myLine], passportClerkLineLock);
+      passportClerkState[myLine] = SIGNALEDCUSTOMER;
+    }else if(passportClerkLineCount[myLine] > 0){
+      customerFromLine = 2;
+      Signal(passportClerkLineCV[myLine], passportClerkLineLock);
+      passportClerkState[myLine] = SIGNALEDCUSTOMER;
+    }else{
+      customerFromLine = 0;
+      passportClerkcheckAndGoOnBreak(myLine);
+      Release(passportClerkLineLock);
+    }
+
+
+    if(customerFromLine != 0){
+      Acquire(printLock);
+        PrintString("PassportClerk ", sizeof("PassportClerk ") );
+        PrintInt(myLine);
+        PrintString(" has signalled a Customer to come to their counter.\n",
+             sizeof(" has signalled a Customer to come to their counter.\n") );
+      Release(printLock);
+      Acquire(passportClerkLock[myLine]);
+      Release(passportClerkLineLock);
+
+      Wait(passportClerkCV[myLine], passportClerkLock[myLine]);
+
+
+      customerSSN = passportClerkSharedDataSSN[myLine];
+
+      if(customerFromLine == 1){
+        money += 500;
+        /*printf("PassportClerk %i has received $500 from Customer %i.\n", myLine, customerSSN);*/
+        Acquire(printLock);
+            PrintString("PassportClerk ", sizeof("PassportClerk ") );
+            PrintInt(myLine);
+            PrintString("has received $500 from Customer ",
+                 sizeof("has received $500 from Customer ") );
+            PrintInt(customerSSN);
+            PrintString(".\n", 2);
+        Release(printLock);
+        Yield();
+      }
+      
+       Acquire(printLock);
+            PrintString("PassportClerk ", sizeof("PassportClerk ") );
+            PrintInt(myLine);
+            PrintString(" has received SSN ", sizeof(" has received SSN ") );
+            PrintInt(customerSSN);
+            PrintString(" from Customer ", sizeof(" from Customer ") );
+            PrintInt(customerSSN);
+            PrintString(".\n", 2);
+        Release(printLock);
+      
+      //Do my job - customer waiting
+      if(!(applicationCompletion[customerSSN] == 1 && pictureCompletion[customerSSN] == 1)) {
+        passportPunishment[customerSSN] = 1;
+        Acquire(printLock);
+            PrintString("PassportClerk ", sizeof("PassportClerk ") );
+            PrintInt(myLine);
+            PrintString(" has determined that Customer ", sizeof(" has determined that Customer ") );
+            PrintInt(customerSSN);
+            PrintString(" does not have both their application and picture completed.\n",
+                 sizeof(" does not have both their application and picture completed.\n") );
+        Release(printLock);
+
+
+        Signal(passportClerkCV[myLine], passportClerkLock[myLine]);
+      }
+      else {
+        passportPunishment[customerSSN] = 0;
+       
+        Acquire(printLock);
+            PrintString("PassportClerk ", sizeof("PassportClerk ") );
+            PrintInt(myLine);
+            PrintString(" has determined that Customer ", sizeof(" has determined that Customer ") );
+            PrintInt(customerSSN);
+            PrintString(" has both their application and picture completed.\n",
+                 sizeof(" has both their application and picture completed.\n") );
+        Release(printLock);
+
+        passportCompletion[customerSSN] = true;
+
+        Signal(passportClerkCV[myLine], passportClerkLock[myLine]);
+        for(i = 0; i < Rand()%81 + 20; i++) {Yield(); }
+        printf("PassportClerk %i has recorded Customer %i passport documentation.\n", myLine, customerSSN);
+        Acquire(printLock);
+            PrintString("PassportClerk ", sizeof("PassportClerk ") );
+            PrintInt(myLine);
+            PrintString(" has recorded Customer ", sizeof(" has recorded Customer ") );
+            PrintInt(customerSSN);
+            PrintString(" passport documentation.\n",
+                 sizeof(" passport documentation.\n") );
+        Release(printLock);
+      }
+
+      Release(passportClerkLock[myLine]);
+    }
+
+  }
+  
 
 
 
-
-
-
-
-
+}/*End PassportClerk*/
 
 
 
@@ -1356,8 +1615,8 @@ int main() {
 
   for(i = 0; i < CLERKCOUNT; i++){
     Fork(ApplicationClerk);
-    Fork(PictureClerk);/*
-    Fork(PassportClerk);
+    Fork(PictureClerk);
+    Fork(PassportClerk);/*
     Fork(Cashier);*/
   }
 

@@ -40,6 +40,7 @@
 #define SC_Signal			19
 #define SC_Broadcast		20
 #define SC_DestroyCondition 	21
+#define SC_Rand 		22
 
 #define MAXFILENAME 256
 
@@ -175,7 +176,8 @@ void Broadcast(int condition, int lock);
 void DestroyCondition(int condition);
 
 
-
+//rand()
+int Rand();
 
 
 

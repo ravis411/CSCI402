@@ -32,6 +32,11 @@ int cashierLineLock;
 int managerLock;
 
 int printLock;  /*For using the PrintSyscalls*/
+int SSNLock;
+int SSNCount = 0;
+int ApplicationMyLineLock;
+int ApplicationMyLine = 0;
+
 
 int applicationClerkLock[MAXCLERKS];
 int pictureClerkLock[MAXCLERKS];
@@ -120,8 +125,39 @@ int senatorPresentWaitOutSide = 0;/*Set by the manager to tell customers when a 
 
 
 /*****************************
-* Broken Utility Functions...
+* Probably Broken Utility Functions...
 ***************************/
+
+/*Used by customerInteractions to return customer/senator text...*/
+char* MYTYPE(int VIP){
+  if(VIP == 0){
+    return CUSTOMERTEXT;
+  }else if(VIP == 1){
+    return SENATORTEXT;
+  }else{
+    return -1;
+  }
+}
+
+/* Utility function to pick the shortest line
+* Customer has already chosen type of line to get in just needs to pick which line
+* Assumptions: The caller has a lock for the given MVs
+*Parameters: 
+  *lineCount: a vector of the lineCount
+  *clerkState: a vector of the clerkState*/
+int pickShortestLine(int* pickShortestlineCount, int* pickShortestclerkState){
+  int myLine = -1;
+  int lineSize = 1000;
+  int i;
+  for(i=0; i < CLERKCOUNT; i++){
+    /*If lineCount < lineSize and clerk is not on break*/
+    if(pickShortestlineCount[i] < lineSize && pickShortestclerkState[i] != ONBREAK ){
+      myLine = i;
+      lineSize = pickShortestlineCount[i];
+    }
+  }
+  return myLine;  /*This is the shortest line*/
+}/*End pickShortestLine*/
 
 /*******************
  End Utility Functions
@@ -169,10 +205,17 @@ int customerCheckSenator(int SSN){
   return present;
 }
 
-void customerCheckIn(int SSN){
+int customerCheckIn(){
+  int SSN;
   Acquire(managerLock);
   customersPresentCount++;
   Release(managerLock);
+
+  Acquire(SSNLock);
+  SSN = SSNCount;
+  SSNCount++;
+  Release(SSNLock);
+  return SSN;
 }
 
 /*To tell the manager they did a great job and let him know we're done.*/
@@ -190,22 +233,404 @@ void customerCheckOut(int SSN){
 }
 
 
+
+
+
+
+
+/*The Customer's Interaction with the applicationClerk
+*    Get their application accepted by the ApplicationClerk*/
+int customerApplicationClerkInteraction(int SSN, int &money, int VIP = 0){
+  int myLine = -1;
+  char* myType = MYTYPE(VIP);
+  int bribe = (money > 500) && (Rand()%2) && !VIP;/*VIPS dont bribe...*/
+  /*I have decided to go to the applicationClerk*/
+
+  /*I should acquire the line lock*/
+  Acquire(applicationClerkLineLock);
+  /*lock acquired*/
+
+  /*Can I go to counter, or have to wait? Should i bribe?*/
+  /*Pick shortest line with clerk not on break*/
+  /*Should i get in the regular line else i should bribe?*/
+  if(!bribe){ /*Get in regular line*/
+    myLine = pickShortestLine(applicationClerkLineCount, applicationClerkState);
+  }else{ /*get in bribe line*/
+    myLine = pickShortestLine(applicationClerkBribeLineCount, applicationClerkState);
+  }
+  
+  /*I must wait in line*/
+  if(applicationClerkState[myLine] != AVAILABLE){
+    if(!bribe){
+      applicationClerkLineCount[myLine]++;
+      /*printf("%s %i has gotten in regular line for ApplicationClerk %i.\n", myType, SSN, myLine);*/
+
+      Acquire(printLock);
+      PrintString(myType, sizeof(myType));
+      PrintString(" ", 1);
+      PrintInt(SSN);
+      PrintString(" has gotten in regular line for ApplicationClerk ", 
+          sizeof(" has gotten in regular line for ApplicationClerk ") );
+      PrintInt(myLine);
+      PrintString(".\n", 2);
+      Release(printLock);
+
+      Wait(applicationClerkLineCV[myLine], applicationClerkLineLock);
+      applicationClerkLineCount[myLine]--;
+      /*See if the clerk for my line signalled me, otherwise check if a senator is here and go outside.*/
+      if(applicationClerkState[myLine] != SIGNALEDCUSTOMER){
+        Release(applicationClerkLineLock);
+        if(customerCheckSenator(SSN))
+          return 0;
+      }
+    }else{
+      applicationClerkBribeLineCount[myLine]++;
+      printf("%s %i has gotten in bribe line for ApplicationClerk %i.\n", myType, SSN, myLine);
+      Wait(applicationClerkBribeLineCV[myLine], applicationClerkLineLock);
+      applicationClerkBribeLineCount[myLine]--;
+      /*See if the clerk for my line signalled me, otherwise check if a senator is here and go outside.*/
+      if(applicationClerkState[myLine] != SIGNALEDCUSTOMER){
+        Release(applicationClerkLineLock);
+        if(customerCheckSenator(SSN))
+          return 0;
+      }
+      money -= 500;
+    }
+  }
+  /*Clerk is AVAILABLE*/
+  applicationClerkState[myLine] = BUSY;
+  Release(applicationClerkLineLock);
+  /*Lets talk to clerk*/
+  Acquire(applicationClerkLock[myLine]);
+  /*Give my data to my clerk*/
+  /*We already have a lock so put my SSN in applicationClerkSharedData*/
+  applicationClerkSharedData[myLine] = SSN;
+  /*printf("%s %i has given SSN %i to ApplicationClerk %i.\n", myType, SSN, SSN, myLine);*/
+  Acquire(printLock);
+      PrintString(myType, sizeof(myType));
+      PrintString(" ", 1);
+      PrintInt(SSN);
+      PrintString(" has given SSN ", sizeof(" has given SSN "));
+      PrintInt(SSN);
+      PrintString(" to ApplicationClerk ", sizeof(" to ApplicationClerk "));
+      PrintInt(myLine);
+      PrintString(".\n", 2);
+  Release(printLock);
+  Signal(applicationClerkCV[myLine], applicationClerkLock[myLine]);
+  /*Wait for clerk to do their job*/
+  Wait(applicationClerkCV[myLine], applicationClerkLock[myLine]);
+  
+  /*Done*/
+  Release(applicationClerkLock[myLine]);
+  return 1;
+}/*End customerApplicationClerkInteraction*/
+
+
+
+
+
+
+
+
+
+/**********************
+* Customer
+**********************/
 void Customer(){
   int appClerkDone = 0;
   int pictureClerkDone = 0;
   int passportClerkDone = 0;
   int cashierDone = 0;
   int SSN = -1;
-  int myLine = -1;
   int money = 700; /*(rand()%4)*500 + 100;*/
-  int appClerkFirst = 0; /*rand() % 2;*/
+  int appClerkFirst = 1; /*rand() % 2;*/
 
-  customerCheckIn(SSN);
+  SSN = customerCheckIn();
 
-  customerCheckOut(SSN);
+
+  while(true){
+
+    //Check if a senator is present and wait outside if there is.
+    customerCheckSenator(SSN);
+
+    if( !(appClerkDone) && (appClerkFirst || pictureClerkDone) ){ //Go to applicationClerk
+      appClerkDone = customerApplicationClerkInteraction(SSN, money);
+    }/*
+    else if( !pictureClerkDone ){
+      //Go to the picture clerk
+      pictureClerkDone = customerPictureClerkInteraction(SSN, money);
+    }
+    else if(!passportClerkDone){
+      passportClerkDone = customerPassportClerkInteraction(SSN, money);
+      if (!passportClerkDone) { for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }
+    }
+    else if(!cashierDone){
+      cashierDone = customerCashierInteraction(SSN, money);
+      if (!cashierDone) { for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }
+    }*/
+    else{
+      /*This terminates the customer should go at end.*/
+      Acquire(printLock);
+      PrintString("Customer ", sizeof("Customer "));
+      PrintInt(SSN);
+      PrintString(" money: ", sizeof(" money: "));
+      PrintInt(money);
+      PrintString("\n", 1);
+      Release(printLock);
+      customerCheckOut(SSN);
+    }
+  }
 
   Exit(0);
 }/*End Customer*/
+
+
+
+
+
+
+
+
+
+/****************************************************************************
+*****************************************************************************
+*****************************************************************************
+*****************************************************************************
+*
+* Clerks
+*
+*****************************************************************************
+****************************************************************************/
+
+
+/*This may be necessary to check for race conditions while a senator is waiting outside
+ * Before the customer leaves their line the clerk might think they are able to call them*/
+int clerkCheckForSenator(){
+  int i;
+  /*DEBUG('s', "DEBUG: Clerk bout to check for senator.\n");*/
+  Acquire(managerLock);
+  if(senatorPresentWaitOutSide && !senatorSafeToEnter){
+    Release(managerLock);
+    /*Lets just wait a bit...
+    printf("DEBUG: Clerk yielding for senator.\n");*/
+    for(i = 0; i < Rand()%780 + 20; i++) { Yield(); }
+    return 1;
+  }
+  Release(managerLock);
+  return 0;
+}
+
+
+
+
+
+
+
+
+/**********************************
+* ApplicationClerk
+**********************************/
+
+/*Utility for applicationClerk to gon on brak
+* Assumptions: called with clerkLineLock*/
+void applicationClerkcheckAndGoOnBreak(int myLine){
+  /*Only go on break if there is at least one other clerk*/
+  int freeOrAvailable = 0;
+  int i;
+  for(i = 0; i < CLERKCOUNT; i++){
+    if(i != myLine && ( applicationClerkState[i] == AVAILABLE || applicationClerkState[i] == BUSY ) ){
+      freeOrAvailable = 1;
+      break;
+    }
+  }
+  /*There is at least one clerk...go on a break.*/
+  if(freeOrAvailable){
+    applicationClerkState[myLine] = ONBREAK;
+
+    Acquire(printLock);
+    PrintString("ApplicationClerk ", sizeof("ApplicationClerk ") );
+    PrintInt(myLine);
+    PrintString(" is going on break.\n", sizeof(" is going on break.\n") );
+    Release(printLock);
+
+    Wait(applicationClerkBreakCV, applicationClerkLineLock);
+    applicationClerkState[myLine] = BUSY;
+
+    Acquire(printLock);
+    PrintString("ApplicationClerk ", sizeof("ApplicationClerk ") );
+    PrintInt(myLine);
+    PrintString(" is coming off break.\n", sizeof(" is coming off break.\n") );
+    Release(printLock);
+
+  }else{
+    /*If everyone is on break...
+    * applicationClerkState[myLine] = AVAILABLE;*/
+    Release(applicationClerkLineLock);
+    /*Should we go to sleep?*/
+    Acquire(managerLock);
+    if(checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){Release(managerLock); Exit(0);}
+    Release(managerLock);
+    Yield();
+    Acquire(applicationClerkLineLock);
+  }
+  /*applicationClerkState[myLine] = AVAILABLE;*/
+}
+
+int getMyApplicationLine(){
+  int myLine;
+  Acquire(ApplicationMyLineLock);
+  myLine = ApplicationMyLine++;
+  Release(ApplicationMyLineLock);
+  return myLine;
+}
+
+/*ApplicationClerk - an application clerk accepts a completed Application. 
+// A completed Application requires an "completed" application and a Customer "social security number".
+// You can assume that the Customer enters the passport office with a completed passport application. 
+// The "social security number" can be a random number, or a sequentially increasing number. 
+// In any event, it must be a unique number for each Customer.
+//
+// PassportClerks "record" that a Customer has a completed application. 
+// The Customer must pass the application to the PassportClerk. 
+// This consists of giving the ApplicationClerk their Customer "social security number" - their personal number.
+// The application is assumed to be passed, it is not explicitly provided in the shared data between the 2 threads.
+// The ApplicationClerk then "records" that a Customer, with the provided social security number, has a completed application. 
+  //This information is used by the PassportClerk. Customers are told when their application has been "filed".
+// Any money received from Customers wanting to move up in line must be added to the ApplicationClerk received money amount.
+// ApplicationClerks go on break if they have no Customers in their line.
+// There is always a delay in an accepted application being "filed".
+// This is determined by a random number of 'currentThread->Yield() calls - the number is to vary from 20 to 100.*/
+void ApplicationClerk(){
+  int myLine;
+  int money = 0;
+  int customerFromLine;/*0 no line, 1 bribe line, 2 regular line*/
+  int customerSSN;
+  int i;
+
+  myLine = getMyApplicationLine();
+
+
+  while(1){
+
+    if(clerkCheckForSenator()) continue; /*Waiting for senators to enter just continue.*/
+
+    Acquire(applicationClerkLineLock);
+
+    /*If there is someone in my bribe line*/
+    if(applicationClerkBribeLineCount[myLine] > 0){
+      customerFromLine = 1;
+      Signal(applicationClerkBribeLineCV[myLine], applicationClerkLineLock);
+      applicationClerkState[myLine] = SIGNALEDCUSTOMER;
+    }else if(applicationClerkLineCount[myLine] > 0){/*if there is someone in my regular line*/
+      customerFromLine = 2;
+      Signal(applicationClerkLineCV[myLine], applicationClerkLineLock);
+      applicationClerkState[myLine] = SIGNALEDCUSTOMER;
+    }else{
+      /*No Customers
+      //Go on break if there is another clerk*/
+      customerFromLine = 0;
+      applicationClerkcheckAndGoOnBreak(myLine);
+      Release(applicationClerkLineLock);
+    }
+
+    /*Should only do this when we have a customer...*/
+    if(customerFromLine != 0){
+
+      /*printf("ApplicationClerk %i has signalled a Customer to come to their counter.\n", myLine);*/
+      Acquire(printLock);
+      PrintString("ApplicationClerk ", sizeof("ApplicationClerk "));
+      PrintInt(myLine);
+      PrintString(" has signalled a Customer to come to their counter.\n",
+         sizeof(" has signalled a Customer to come to their counter.\n"));
+      Release(printLock);
+
+      Acquire(applicationClerkLock[myLine]);
+      Release(applicationClerkLineLock);
+      /*wait for customer data*/
+      Wait(applicationClerkCV[myLine], applicationClerkLock[myLine]);
+      /*Customer Has given me their SSN?
+      //And I have a lock*/
+      customerSSN = applicationClerkSharedData[myLine];
+      
+      /*Customer from bribe line? //maybe should be separate signalwait  ehh?*/
+      if(customerFromLine == 1){
+        money += 500;
+        /*printf("ApplicationClerk %i has received $500 from Customer %i.\n", myLine, customerSSN);*/
+       Acquire(printLock);
+          PrintString("ApplicationClerk ", sizeof("ApplicationClerk "));
+          PrintInt(myLine);
+          PrintString(" has received $500 from Customer ", sizeof(" has received $500 from Customer "));
+          PrintInt(customerSSN);
+          PrintString(".\n", 2);
+        Release(printLock);
+        Yield();/*Just to change things up a bit.*/
+      }
+      
+
+      /*printf("ApplicationClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);*/
+      Acquire(printLock);
+          PrintString("ApplicationClerk ", sizeof("ApplicationClerk "));
+          PrintInt(myLine);
+          PrintString(" has received SSN ", sizeof(" has received SSN "));
+          PrintInt(customerSSN);
+          PrintString(" from Customer ", sizeof(" from Customer "));
+          PrintInt(customerSSN);
+          PrintString(".\n", 2);
+        Release(printLock);
+      
+      /*Signal Customer that I'm Done.*/
+      Signal(applicationClerkCV[myLine], applicationClerkLock[myLine]);
+      Release(applicationClerkLock[myLine]);
+
+      //yield for filing time
+      for(i = 0; i < Rand()%81 + 20; i++) { Yield(); }
+      
+      /*TODO: NEED TO ACQUIRE A LOCK FOR THIS!!*/
+      applicationCompletion[customerSSN] = 1;
+      /*printf("ApplicationClerk %i has recorded a completed application for Customer %i.\n", myLine, customerSSN);*/
+      Acquire(printLock);
+          PrintString("ApplicationClerk ", sizeof("ApplicationClerk "));
+          PrintInt(myLine);
+          PrintString(" has recorded a completed application for Customer ", 
+               sizeof(" has recorded a completed application for Customer "));
+          PrintInt(customerSSN);
+          PrintString(".\n", 2);
+        Release(printLock);
+    }/*end if have customer*/
+
+  }
+
+}/*End ApplicationClerk*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -465,6 +890,10 @@ int main() {
   cashierLineLock = CreateLock();
   managerLock = CreateLock();
   printLock = CreateLock();
+  SSNLock = CreateLock();
+  SSNCount = 0;
+  ApplicationMyLineLock = CreateLock();
+  ApplicationMyLine = 0;
 
   applicationClerkBreakCV = CreateCondition();
   pictureClerkBreakCV = CreateCondition();

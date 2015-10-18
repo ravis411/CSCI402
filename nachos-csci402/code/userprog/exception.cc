@@ -700,6 +700,9 @@ void DestroyCondition_Syscall(int condition){
 
 }
 
+int Rand_Syscall(){
+	return rand();
+}
 
 
 
@@ -820,6 +823,11 @@ void ExceptionHandler(ExceptionType which) {
 		case SC_DestroyCondition:
 			DEBUG('a', "DestroyCondition syscall.\n");
 			DestroyCondition_Syscall(machine->ReadRegister(4));
+		break;
+
+		case SC_Rand:
+			DEBUG('a', "Rand syscall.\n");
+			rv = Rand_Syscall();
 		break;
 
 	}

@@ -149,7 +149,6 @@ void PrintString(char* vaddr, int size);
 /********************************
 *	Create lock...creates a lock and returns and integer representation.
 */
-//#define SC_CreateLock	13
 int CreateLock();
 
 

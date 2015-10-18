@@ -240,7 +240,7 @@ void customerCheckOut(int SSN){
 
 /*The Customer's Interaction with the applicationClerk
 *    Get their application accepted by the ApplicationClerk*/
-int customerApplicationClerkInteraction(int SSN, int &money, int VIP = 0){
+int customerApplicationClerkInteraction(int SSN, int *money, int VIP = 0){
   int myLine = -1;
   char* myType = MYTYPE(VIP);
   int bribe = (money > 500) && (Rand()%2) && !VIP;/*VIPS dont bribe...*/

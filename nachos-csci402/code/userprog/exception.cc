@@ -440,7 +440,7 @@ public:
 };
 #define lockTableSize 100
 BitMap lockTableBitMap(lockTableSize);
-vector<LockTableEntry*> lockTable(lockTableSize, NULL);
+LockTableEntry* lockTable[lockTableSize];
 
 
 ///////////////////////////////

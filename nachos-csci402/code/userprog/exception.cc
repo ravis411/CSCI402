@@ -647,7 +647,7 @@ void Signal_Syscall(int condition, int lock){
 	ce->condition->Signal(le->lock);
 
 	if(ce->isToBeDeleted && !ce->condition->isBusy()){
-		DEBUG('C', "Condition %i no longer BUSY. Deleting.");
+		DEBUG('C', "Condition %i no longer BUSY. Deleting.", condition);
 		ConditionTable[condition] = NULL;
 		delete ce->condition;
 		ce->condition = NULL;
@@ -672,7 +672,7 @@ void Broadcast_Syscall(int condition, int lock){
 
 
 	if(ce->isToBeDeleted && !ce->condition->isBusy()){
-		DEBUG('C', "Condition %i no longer BUSY. Deleting.");
+		DEBUG('C', "Condition %i no longer BUSY. Deleting.", condition);
 		ConditionTable[condition] = NULL;
 		delete ce->condition;
 		ce->condition = NULL;

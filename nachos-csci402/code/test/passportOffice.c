@@ -285,7 +285,18 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
       }
     }else{
       applicationClerkBribeLineCount[myLine]++;
-      printf("%s %i has gotten in bribe line for ApplicationClerk %i.\n", myType, SSN, myLine);
+
+      /*printf("%s %i has gotten in bribe line for ApplicationClerk %i.\n", myType, SSN, myLine);*/
+       Acquire(printLock);
+      PrintString(myType, sizeof(myType));
+      PrintString(" ", 1);
+      PrintInt(SSN);
+      PrintString(" has gotten in bribe line for ApplicationClerk ", 
+          sizeof(" has gotten in bribe line for ApplicationClerk ") );
+      PrintInt(myLine);
+      PrintString(".\n", 2);
+      Release(printLock);
+      
       Wait(applicationClerkBribeLineCV[myLine], applicationClerkLineLock);
       applicationClerkBribeLineCount[myLine]--;
       /*See if the clerk for my line signalled me, otherwise check if a senator is here and go outside.*/

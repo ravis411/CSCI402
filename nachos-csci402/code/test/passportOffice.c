@@ -1214,7 +1214,7 @@ void PassportClerk(){
             PrintString(".\n", 2);
         Release(printLock);
       
-      //Do my job - customer waiting
+
       if(!(applicationCompletion[customerSSN] == 1 && pictureCompletion[customerSSN] == 1)) {
         passportPunishment[customerSSN] = 1;
         Acquire(printLock);

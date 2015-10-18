@@ -368,8 +368,8 @@ void managerSenatorCheck(){
   
   if(senatorWaiting && !customersInside){
     /*if(1 || !senatorSafeToEnter) DEBUG('s', "DEBUG: MANAGER: SENATORS SAFE TO ENTER.\n");*/
-    senatorSafeToEnter = true;
-    senatorLineCV->Broadcast(managerLock);
+    senatorSafeToEnter = 1;
+    Broadcast(senatorLineCV, managerLock);
     /*DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to senators.\n");*/
   }
 

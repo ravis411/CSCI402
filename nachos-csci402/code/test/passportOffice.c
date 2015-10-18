@@ -20,7 +20,7 @@ int THEEND = 0;
 #define ONBREAK 3
 
 char CUSTOMERTEXT[] = "Customer";
-char SENATORTEXT[] = "Senator";
+char SENATORTEXT[] = "Senator ";
 
 #define true 1
 #define false 0
@@ -275,7 +275,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
       /*printf("%s %i has gotten in regular line for ApplicationClerk %i.\n", myType, SSN, myLine);*/
 
       Acquire(printLock);
-      PrintString(myType, sizeof(*myType));
+      PrintString(myType, 8);
       PrintString(" ", 1);
       PrintInt(SSN);
       PrintString(" has gotten in regular line for ApplicationClerk ", 
@@ -297,7 +297,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
 
       /*printf("%s %i has gotten in bribe line for ApplicationClerk %i.\n", myType, SSN, myLine);*/
        Acquire(printLock);
-      PrintString(myType, sizeof(*myType));
+      PrintString(myType, 8);
       PrintString(" ", 1);
       PrintInt(SSN);
       PrintString(" has gotten in bribe line for ApplicationClerk ", 
@@ -327,7 +327,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
   applicationClerkSharedData[myLine] = SSN;
   /*printf("%s %i has given SSN %i to ApplicationClerk %i.\n", myType, SSN, SSN, myLine);*/
   Acquire(printLock);
-      PrintString(myType, sizeof(*myType));
+      PrintString(myType, 8);
       PrintString(" ", 1);
       PrintInt(SSN);
       PrintString(" has given SSN ", sizeof(" has given SSN "));
@@ -508,7 +508,7 @@ void Customer(){
   int cashierDone = 0;
   int SSN = -1;
   int money = (Rand()%4)*500 + 100;
-  int appClerkFirst = true || Rand() % 2;
+  int appClerkFirst = Rand() % 2;
 
   SSN = customerCheckIn();
 

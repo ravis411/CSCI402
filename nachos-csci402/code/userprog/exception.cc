@@ -514,11 +514,12 @@ void Release_Syscall(int lock){
 	}
 	
 	LockTableEntry* le = lockTable[lock];
-	
+
 	DEBUG('L', "Releasing lock.\n");
 	le->lock->Release();
 	
 	if(le->isToBeDeleted && !(le->lock->isBusy()) ){
+		DEBUG('L', "Lock %i no longer busy. Deleting.\n", lock);
 		delete le->lock;
 		le->lock = NULL;
 		delete le;

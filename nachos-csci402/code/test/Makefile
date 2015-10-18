@@ -81,7 +81,7 @@ testExec: testExec.o start.o
 	../bin/coff2noff testExec.coff testExec
 
 testLock.o: testLock.c
-	$(CC) $(CFLAGS) -c testExec.c
+	$(CC) $(CFLAGS) -c testLock.c
 testLock: testLock.o start.o
 	$(LD) $(LDFLAGS) start.o testLock.o -o testLock.coff
 	../bin/coff2noff testLock.coff testLock

@@ -498,7 +498,7 @@ void Acquire_Syscall(int lock){
 	}
 
 	DEBUG('L', "Acquiring lock.\n");
-	lockEntry->lock->Acquire();
+	lockTable[lock]->lock->Acquire();
 
 }
 
@@ -514,7 +514,7 @@ void Release_Syscall(int lock){
 	}
 	
 	DEBUG('L', "Releasing lock.\n");
-	lockEntry->lock->Release();
+	lockTable[lock]->lock->Release();
 	/*
 	if(lockEntry->isToBeDeleted && notBusy){
 		delete lock;

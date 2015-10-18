@@ -475,7 +475,7 @@ int customerPictureClerkInteraction(int SSN, int *money, int VIP){
 int customerPassportClerkInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
   char* myType = MYTYPE(VIP);
-  int bribe = (money > 500) && (Rand()%2) && !VIP;
+  int bribe = (*money > 500) && (Rand()%2) && !VIP;
 
   Acquire(passportClerkLineLock);
 
@@ -523,7 +523,7 @@ int customerPassportClerkInteraction(int SSN, int *money, int VIP){
         if(customerCheckSenator(SSN))
           return false;
       }
-      money -= 500;
+      *money -= 500;
     }
   }
 

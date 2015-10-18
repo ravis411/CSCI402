@@ -31,6 +31,15 @@
 #define SC_Yield		10
 #define SC_PrintInt		11
 #define SC_PrintString	12
+#define SC_CreateLock	13
+#define SC_Acquire		14
+#define SC_Release		15
+#define SC_DestroyLock	16
+#define SC_CreateCondition	17
+#define SC_Wait				18
+#define SC_Signal			19
+#define SC_Broadcast		20
+#define SC_DestroyCondition 	21
 
 #define MAXFILENAME 256
 
@@ -135,6 +144,45 @@ void PrintInt(int aNumber);
 /* PrintString similar to Write *************************
 */
 void PrintString(char* vaddr, int size);
+
+
+/********************************
+*	Create lock...creates a lock and returns and integer representation.
+*/
+//#define SC_CreateLock	13
+int CreateLock();
+
+
+/***********************
+*	Acquire the lock
+*/
+void Acquire(int lock);
+/*****************
+* 	Release the lock
+*/
+void Release(int lock);
+
+void DestroyLock(int lock);
+
+/*************************
+*
+*	Condition Syscalls
+*
+**************************/
+int CreateCondition();
+void Wait(int condition, int lock);
+void Signal(int condition, int lock);
+void Broadcast(int condition, int lock);
+void DestroyCondition(int condition);
+
+
+
+
+
+
+
+
+
 
 #endif /* IN_ASM */
 

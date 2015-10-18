@@ -15,7 +15,6 @@
 #include "interrupt.h"
 #include "stats.h"
 #include "timer.h"
-#include "bitmap.h"
 //#include <map>
 #include <vector>
 using namespace std;
@@ -32,6 +31,11 @@ extern Scheduler *scheduler;			// the ready list
 extern Interrupt *interrupt;			// interrupt status
 extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
+
+
+#ifdef USER_PROGRAM
+
+#include "bitmap.h"
 extern BitMap *pageTableBitMap;	//Bitmap to track unused pages
 
 class ProcessTableEntry{
@@ -62,7 +66,6 @@ extern ProcessTableClass* ProcessTable;
 
 //extern std::map<AddrSpace*, ProcessTableEntry*> processTable;	//The ProcessTable
 
-#ifdef USER_PROGRAM
 #include "machine.h"
 extern Machine* machine;	// user program memory and registers
 #endif

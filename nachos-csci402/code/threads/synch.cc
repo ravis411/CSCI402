@@ -248,3 +248,7 @@ void Condition::Broadcast(Lock* conditionLock) {
         Signal(conditionLock);
     }
 }
+
+bool Condition::isBusy(){
+    return !queue->IsEmpty();
+}

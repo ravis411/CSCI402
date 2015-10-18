@@ -134,6 +134,8 @@ class Condition {
     void Broadcast(Lock *conditionLock);// the currentThread for all of 
 					// these operations
 
+    bool isBusy();  //returns true if threads are waiting in the Q false otherwise.
+
   private:
     char* name;
     // plus some other stuff you'll need to define

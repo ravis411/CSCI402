@@ -645,6 +645,16 @@ void Signal_Syscall(int condition, int lock){
 	LockTableEntry* le = lockTable[lock];
 
 	ce->condition->Signal(le->lock);
+
+	if(ce->isToBeDeleted && !ce->condition->isBusy()){
+		DEBUG('C', "Condition %i no longer BUSY. Deleting.");
+		ConditionTable[condition] = NULL;
+		delete ce->condition;
+		ce->condition = NULL;
+		delete ce;
+		ConditionTableBitMap.Clear(condition);
+	}
+
 }
 
 void Broadcast_Syscall(int condition, int lock){
@@ -659,10 +669,34 @@ void Broadcast_Syscall(int condition, int lock){
 	LockTableEntry* le = lockTable[lock];
 
 	ce->condition->Broadcast(le->lock);
+
+
+	if(ce->isToBeDeleted && !ce->condition->isBusy()){
+		DEBUG('C', "Condition %i no longer BUSY. Deleting.");
+		ConditionTable[condition] = NULL;
+		delete ce->condition;
+		ce->condition = NULL;
+		delete ce;
+		ConditionTableBitMap.Clear(condition);
+	}
 }
 
 void DestroyCondition_Syscall(int condition){
 	DEBUG('C', "In DestroyCondition_Syscall\n");
+
+	ConditionTableEntry* ce = ConditionTable[condition];
+
+	if((ce->condition->isBusy()) ){
+		ce->isToBeDeleted = TRUE;
+		DEBUG('C', "Condition %i BUSY marking for deletion.\n", condition);
+	}else{
+		ConditionTable[condition] = NULL;
+		delete ce->condition;
+		ce->condition = NULL;
+		delete ce;
+		ConditionTableBitMap.Clear(condition);
+		DEBUG('C', "Condition %i deleted.\n", condition);
+	}
 
 }
 

@@ -60,11 +60,13 @@ void thread2(){
 
 int main() {
   int i;
+  int condition2;
 
   Write(welcomeString, sizeof(welcomeString), ConsoleOutput);
 
   lock1 = CreateLock();
   condition1 = CreateCondition();
+
 
 
   Fork(function1);
@@ -73,12 +75,16 @@ int main() {
   Fork(thread2);
   Release(lock1);
 	
+  DestroyCondition(condition1);
 	
   while(done == 0){
     Yield();
   }
 
-  PrintString("Test For Bad input expected output are 3 error messages.\n", 
+  condition2 = CreateCondition();
+  DestroyCondition(condition2);
+
+  PrintString("\nTest For Bad input expected output are 3 error messages.\n", 
       sizeof("Test For Bad input expected output are 3 error messages.\n"));
   Wait(-1, 0);
   Signal(5, 0);

@@ -443,6 +443,26 @@ BitMap lockTableBitMap(lockTableSize);
 LockTableEntry* lockTable[lockTableSize];
 
 
+bool Lock_Syscall_InputValidation(int lock){
+	if(lock < 0 || lock >= lockTableSize){
+		printf("Invalid Lock Identifier: %i ", lock);
+		return FALSE;
+	}
+
+	LockTableEntry* lockEntry = lockTable[lock];
+
+	if(lockEntry == NULL){
+		printf("Lock %i does not exist. ", lock);
+		return FALSE;
+	}
+	if(lockEntry->space != currentThread->space){
+		printf("Lock %i does not belong to this process. ", lock);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+
 ///////////////////////////////
 // Creates the Lock
 ///////////////////////////////
@@ -472,20 +492,9 @@ int CreateLock_Syscall(){
 void Acquire_Syscall(int lock){
 	DEBUG('L', "In Acquire_Syscall\n");
 
-	if(lock < 0 || lock >= lockTableSize){
-		printf("Invalid Lock Identifier: %i\n", lock);
-		return;
-	}
-
-	LockTableEntry* lockEntry = lockTable[lock];
-
-	if(lockEntry == NULL){
-		printf("Lock %i does not exist. Unable to Acquire.\n", lock);
-		return;
-	}
-	if(lockEntry->space != currentThread->space){
-		printf("Lock %i does not belong to this process. Unable to Acquire.\n", lock);
-		return;
+	if(!Lock_Syscall_InputValidation(lock)){
+	 printf("Unable to Acquire.\n");
+	 return;
 	}
 
 	DEBUG('L', "Acquiring lock.\n");
@@ -499,19 +508,9 @@ void Acquire_Syscall(int lock){
 void Release_Syscall(int lock){
 	DEBUG('L', "In Release_Syscall\n");
 
-	if(lock < 0 || lock >= lockTableSize){
-		printf("Invalid Lock Identifier: %i\n", lock);
-		return;
-	}
-
-	LockTableEntry* lockEntry = lockTable[lock];
-	if(lockEntry == NULL){
-		printf("Lock %i does not exist. Unable to Release.\n", lock);
-		return;
-	}
-	if(lockEntry->space != currentThread->space){
-		printf("Lock %i does not belong to this process. Unable to Release.\n", lock);
-		return;
+	if(!Lock_Syscall_InputValidation(lock)){
+	 printf("Unable to Release.\n");
+	 return;
 	}
 	
 	DEBUG('L', "Releasing lock.\n");
@@ -526,33 +525,123 @@ void Release_Syscall(int lock){
 
 void DestroyLock_Syscall(int lock){
 	DEBUG('L', "In DestroyLock_Syscall\n");
+
+	if(!Lock_Syscall_InputValidation(lock)){
+	 printf("Unable to DestroyLock.\n");
+	 return;
+	}
 }
 
-/*************************
-*
-*	Condition Syscalls
-*
-**************************/
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+//	Condition Syscalls
+///////////////////////////////////////////////////////////////////////////////////////////
+
+class ConditionTableEntry{
+public:
+	Condition* condition;
+	AddrSpace* space;
+	bool isToBeDeleted;
+};
+
+#define ConditionTableSize 100
+BitMap ConditionTableBitMap(ConditionTableSize);
+ConditionTableEntry* ConditionTable[ConditionTableSize];
+
+
+bool Condition_Syscall_InputValidation(int cond, int lock){
+
+	if(!Lock_Syscall_InputValidation(lock)){
+	 return FALSE;
+	}
+
+	if(cond < 0 || cond >= ConditionTableSize){
+		printf("Invalid Condition Identifier: %i ", cond);
+		return FALSE;
+	}
+
+	ConditionTableEntry* condEntry = ConditionTable[cond];
+	if(condEntry == NULL){
+		printf("Condition %i does not exist. ", cond);
+		return FALSE;
+	}
+	if(condEntry->space != currentThread->space){
+		printf("Lock %i does not belong to this process. ", cond);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+
+
 int CreateCondition_Syscall(){
 	DEBUG('C', "In CreateCondition_Syscall\n");
-	return -1;
+	
+	int conID = ConditionTableBitMap.Find();
+	if(conID == -1){
+		printf("Max Number of Conditions created. Unable to CreateCondition\n");
+		return -1;
+	}
+
+	ConditionTableEntry* ce = new ConditionTableEntry();
+
+	ce->condition = new Condition("Condition " + conID);
+	ce->space = currentThread->space;
+	ce->isToBeDeleted = FALSE;
+
+	ConditionTable[conID]	= ce;
+
+	return conID;
 }
 
 void Wait_Syscall(int condition, int lock){
 	DEBUG('C', "In Wait_Syscall\n");
 
+	if(!Condition_Syscall_InputValidation(condition, lock)){
+		printf("Unable to Wait.\n");
+		return;
+	}
+
+	ConditionTableEntry* ce = ConditionTable[condition];
+	LockTableEntry* le = lockTable[lock];
+
+	ce->condition->Wait(le->lock);
 }
 
 void Signal_Syscall(int condition, int lock){
 	DEBUG('C', "In Signal_Syscall\n");
+
+	if(!Condition_Syscall_InputValidation(condition, lock)){
+		printf("Unable to Signal.\n");
+		return;
+	}
+
+	ConditionTableEntry* ce = ConditionTable[condition];
+	LockTableEntry* le = lockTable[lock];
+
+	ce->condition->Signal(le->lock);
 }
 
 void Broadcast_Syscall(int condition, int lock){
 	DEBUG('C', "In Broadcast_Syscall\n");
+
+	if(!Condition_Syscall_InputValidation(condition, lock)){
+		printf("Unable to Broadcast.\n");
+		return;
+	}
+
+	ConditionTableEntry* ce = ConditionTable[condition];
+	LockTableEntry* le = lockTable[lock];
+
+	ce->condition->Broadcast(le->lock);
 }
 
 void DestroyCondition_Syscall(int condition){
 	DEBUG('C', "In DestroyCondition_Syscall\n");
+
 }
 
 

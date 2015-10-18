@@ -86,5 +86,11 @@ testLock: testLock.o start.o
 	$(LD) $(LDFLAGS) start.o testLock.o -o testLock.coff
 	../bin/coff2noff testLock.coff testLock
 
+testCondition.o: testCondition.c
+	$(CC) $(CFLAGS) -c testCondition.c
+testCondition: testCondition.o start.o
+	$(LD) $(LDFLAGS) start.o testCondition.o -o testCondition.coff
+	../bin/coff2noff testCondition.coff testCondition
+
 clean:
 	rm -f *.o *.coff

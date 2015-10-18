@@ -46,8 +46,6 @@ void thread2(){
 
 
 int main() {
-  int i;
-  int lock1;
   int lock2;
 
   Write(welcomeString, sizeof(welcomeString), ConsoleOutput);
@@ -60,10 +58,12 @@ int main() {
   Fork(function1);
   Fork(thread2);
 
-
+  DestroyLock(lock1);
   Release(lock1);
 
-  DestroyLock(lock1);
+  lock2 = CreateLock();
+  DestroyLock(lock2);
+
 	
 	
   while(done == 0){

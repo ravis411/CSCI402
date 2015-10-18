@@ -163,6 +163,14 @@ bool Lock::isHeldByCurrentThread(){
     return (currentThread == lockOwner);
 }
 
+
+//True if lockstate is busy
+//  false otherwise...
+bool Lock::isBusy(){
+    return lockState == BUSY;
+}
+
+
 /////////////////////////////////
 //End Lock Impementation
 /////////////////////////////////

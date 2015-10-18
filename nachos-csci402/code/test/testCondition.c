@@ -80,8 +80,8 @@ int main() {
 
   PrintString("Test For Bad input expected output are 3 error messages.\n", 
       sizeof("Test For Bad input expected output are 3 error messages.\n"));
-  Wait(-1, 1);
-  Signal(5, 1);
+  Wait(-1, 0);
+  Signal(5, 0);
   Broadcast(3, 2);
 
 

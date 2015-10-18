@@ -513,14 +513,19 @@ void Release_Syscall(int lock){
 	 return;
 	}
 	
+	LockTableEntry* le = lockTable[lock];
+	
 	DEBUG('L', "Releasing lock.\n");
-	lockTable[lock]->lock->Release();
-	/*
-	if(lockEntry->isToBeDeleted && notBusy){
-		delete lock;
-		lock = NULL;
+	le->lock->Release();
+	
+	if(le->isToBeDeleted && !(le->lock->isBusy()) ){
+		delete le->lock;
+		le->lock = NULL;
+		delete le;
+		lockTable[lock] = NULL;
+		lockTableBitMap.Clear(lock);
 	}
-	*/
+
 }
 
 void DestroyLock_Syscall(int lock){
@@ -530,6 +535,22 @@ void DestroyLock_Syscall(int lock){
 	 printf("Unable to DestroyLock.\n");
 	 return;
 	}
+
+	LockTableEntry* le = lockTable[lock];
+
+	if((le->lock->isBusy()) ){
+		le->isToBeDeleted = TRUE;
+		DEBUG('L', "Lock %i BUSY marking for deletion.\n", lock);
+	}else{
+		delete le->lock;
+		le->lock = NULL;
+		delete le;
+		lockTable[lock] = NULL;
+		lockTableBitMap.Clear(lock);
+		DEBUG('L', "Lock %i deleted.\n", lock);
+	}
+
+
 }
 
 

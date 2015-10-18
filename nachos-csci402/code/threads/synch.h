@@ -76,6 +76,7 @@ class Lock {
 					// holds this lock.  Useful for
 					// checking in Release, and in
 					// Condition variable ops below.
+    bool isBusy(); //True if lockstate is busy//false otherwise.
 
   private:
     char* name;				// for debugging

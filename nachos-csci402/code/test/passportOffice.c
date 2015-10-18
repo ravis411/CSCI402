@@ -236,8 +236,8 @@ void checkEndOfDay(){
 
   if (checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){
     /*DEBUG('s', "DEBUG: MANAGER: END OF DAY!\n");
-    //All the customers are gone
-    //Lets all go to sleep*/
+    All the customers are gone
+    Lets all go to sleep*/
     THEEND = 1;
     Release(managerLock);
 
@@ -250,7 +250,7 @@ void checkEndOfDay(){
 
 void Manager(){
   int i;
-  //Untill End of Simulation
+  /*Untill End of Simulation*/
   while(1){
     for(i = 0; i < 1000; i++) { 
     

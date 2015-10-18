@@ -433,6 +433,7 @@ void PrintString_Syscall(unsigned int vaddr, int len){
 //	Lock Syscalls
 ///////////////////////////////////////////////////////////////////////////////////////////
 class LockTableEntry{
+public:
 	Lock* lock;
 	AddrSpace* space;
 	bool isToBeDeleted;

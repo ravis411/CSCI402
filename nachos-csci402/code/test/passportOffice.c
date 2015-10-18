@@ -136,23 +136,22 @@ int senatorPresentWaitOutSide = 0;/*Set by the manager to tell customers when a 
  *********************************************************************************
  *********************************************************************************/
 
-//Wait outside or something there's a Senator present
+/*Wait outside or something there's a Senator present*/
 void customerSenatorPresentWaitOutside(int SSN){
   PrintString("Customer ", sizeof("Customer ")); 
   PrintInt(SSN);
   PrintString(" is going outside the PassportOffice because there is a Senator present.\n");
 
-  //Go outside.
+  /*Go outside.*/
   customersPresentCount--;
   passportOfficeOutsideLineCount++;
   Wait(passportOfficeOutsideLineCV, managerLock);
-  //Can go back inside now.
+  /*Can go back inside now.*/
   passportOfficeOutsideLineCount--;
   customersPresentCount++;
 }
 
-// Checks if a senator is present. Then goes outside if there is.
-// 
+/* Checks if a senator is present. Then goes outside if there is.*/
 int customerCheckSenator(int SSN){
   Acquire(managerLock);
   int present = senatorPresentWaitOutSide;
@@ -170,7 +169,7 @@ void customerCheckIn(int SSN){
   Release(managerLock);
 }
 
-//To tell the manager they did a great job and let him know we're done.
+/*To tell the manager they did a great job and let him know we're done.*/
 void customerCheckOut(int SSN){
   Acquire(managerLock);
   customersPresentCount--;
@@ -184,7 +183,7 @@ void customerCheckOut(int SSN){
 
 
 void Customer(){
-  int appClerkDone = 0; //State vars
+  int appClerkDone = 0;
   int pictureClerkDone = 0;
   int passportClerkDone = 0;
   int cashierDone = 0;
@@ -234,14 +233,11 @@ void checkEndOfDay(){
   Acquire(managerLock);
 
   if (checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){
-    //DEBUG('s', "DEBUG: MANAGER: END OF DAY!\n");
+    /*DEBUG('s', "DEBUG: MANAGER: END OF DAY!\n");
     //All the customers are gone
-    //Lets all go to sleep
+    //Lets all go to sleep*/
     THEEND = true;
     Release(managerLock);
-    //finish all clerk threads
-
-
 
   /*currentThread->Finish();*/
     Exit(0);

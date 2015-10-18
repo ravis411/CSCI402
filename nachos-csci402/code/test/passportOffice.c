@@ -442,7 +442,7 @@ int customerPictureClerkInteraction(int SSN, int *money, int VIP){
       Wait(pictureClerkCV[myLine], pictureClerkLock[myLine]);
     }
     else {
-      printf("%s %i does like their picture from PictureClerk %i.\n", myType, SSN, myLine);
+      /*printf("%s %i does like their picture from PictureClerk %i.\n", myType, SSN, myLine);*/
       Acquire(printLock);
           PrintString(myType, sizeof(myType));
           PrintString(" ", 1);

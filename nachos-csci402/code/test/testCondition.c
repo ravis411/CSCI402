@@ -14,6 +14,7 @@ char string6[] = "String 6...\n";
 
 int lock1;
 int condition1;
+int condition2;
 int done = 0;
 
 
@@ -57,10 +58,16 @@ void thread2(){
   Exit(0);
 }
 
+void thread3(){
+  Acquire(lock1);
+  Wait(condition2);
+  Release(lock1);
+  Exit(0);
+}
+
 
 int main() {
   int i;
-  int condition2;
 
   Write(welcomeString, sizeof(welcomeString), ConsoleOutput);
 
@@ -75,14 +82,21 @@ int main() {
   Fork(thread2);
   Release(lock1);
 	
-  DestroyCondition(condition1);
+  
 	
   while(done == 0){
     Yield();
   }
+  DestroyCondition(condition1);
+
 
   condition2 = CreateCondition();
+  Fork(thread3);
+  Yield();
+  Acquire(lock1);
   DestroyCondition(condition2);
+  Signal(condition2, lock1);
+  Release(lock1);
 
   PrintString("\nTest For Bad input expected output are 3 error messages.\n", 
       sizeof("Test For Bad input expected output are 3 error messages.\n"));

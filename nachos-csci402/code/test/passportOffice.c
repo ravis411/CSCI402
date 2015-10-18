@@ -251,7 +251,7 @@ void customerCheckOut(int SSN){
 *    Get their application accepted by the ApplicationClerk*/
 int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
-  char myType[] = MYTYPE(VIP);
+  char* myType = MYTYPE(VIP);
   int bribe = (*money > 500) && (Rand()%2) && !VIP;/*VIPS dont bribe...*/
   /*I have decided to go to the applicationClerk*/
 
@@ -275,7 +275,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
       /*printf("%s %i has gotten in regular line for ApplicationClerk %i.\n", myType, SSN, myLine);*/
 
       Acquire(printLock);
-      PrintString(myType, sizeof(myType));
+      PrintString(myType, sizeof(*myType));
       PrintString(" ", 1);
       PrintInt(SSN);
       PrintString(" has gotten in regular line for ApplicationClerk ", 
@@ -297,7 +297,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
 
       /*printf("%s %i has gotten in bribe line for ApplicationClerk %i.\n", myType, SSN, myLine);*/
        Acquire(printLock);
-      PrintString(myType, sizeof(myType));
+      PrintString(myType, sizeof(*myType));
       PrintString(" ", 1);
       PrintInt(SSN);
       PrintString(" has gotten in bribe line for ApplicationClerk ", 
@@ -327,7 +327,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
   applicationClerkSharedData[myLine] = SSN;
   /*printf("%s %i has given SSN %i to ApplicationClerk %i.\n", myType, SSN, SSN, myLine);*/
   Acquire(printLock);
-      PrintString(myType, sizeof(myType));
+      PrintString(myType, sizeof(*myType));
       PrintString(" ", 1);
       PrintInt(SSN);
       PrintString(" has given SSN ", sizeof(" has given SSN "));
@@ -354,7 +354,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
 //Get their picture accepted by the pictureClerk*/
 int customerPictureClerkInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
-  char[] myType = MYTYPE(VIP);
+  char* myType = MYTYPE(VIP);
   int bribe = (*money > 500) && (Rand()%2) && !VIP;
 
   Acquire(pictureClerkLineLock);

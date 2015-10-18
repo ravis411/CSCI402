@@ -609,6 +609,7 @@ void Customer(){
   int SSN = -1;
   int money = (Rand()%4)*500 + 100;
   int appClerkFirst = Rand() % 2;
+  int i;
 
   SSN = customerCheckIn();
 
@@ -624,11 +625,11 @@ void Customer(){
     else if( !pictureClerkDone ){
       /*Go to the picture clerk*/
       pictureClerkDone = customerPictureClerkInteraction(SSN, &money, 0);
-    }/*
-    else if(!passportClerkDone){
-      passportClerkDone = customerPassportClerkInteraction(SSN, money);
-      if (!passportClerkDone) { for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }
     }
+    else if(!passportClerkDone){
+      passportClerkDone = customerPassportClerkInteraction(SSN, &money, 0);
+      if (!passportClerkDone) { for (i = 0; i < rand() % 901 + 100; i++) { Yield(); } }
+    }/*
     else if(!cashierDone){
       cashierDone = customerCashierInteraction(SSN, money);
       if (!cashierDone) { for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }

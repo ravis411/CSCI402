@@ -38,7 +38,13 @@ int printLock;  /*For using the PrintSyscalls*/
 int SSNLock;
 int SSNCount = 0;
 int ApplicationMyLineLock;
-int ApplicationMyLine = 0;
+int ApplicationMyLine;
+int PictureMyLineLock;
+int PictureMyLine;
+int PassportMyLineLock;
+int PassportMyLine;
+int CashierMyLineLock;
+int CashierMyLine;
 
 
 int applicationClerkLock[MAXCLERKS];
@@ -132,7 +138,7 @@ int senatorPresentWaitOutSide = 0;/*Set by the manager to tell customers when a 
 ***************************/
 
 /*Used by customerInteractions to return customer/senator text...*/
-char* MYTYPE(int VIP){
+char[] MYTYPE(int VIP){
   if(VIP == 0){
     return CUSTOMERTEXT;
   }else if(VIP == 1){
@@ -551,6 +557,22 @@ void Customer(){
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /****************************************************************************
 *****************************************************************************
 *****************************************************************************
@@ -824,14 +846,22 @@ void pictureClerkcheckAndGoOnBreak(int myLine){
   /*applicationClerkState[myLine] = AVAILABLE;*/
 }
 
+int PictureGetMyLine(){
+  int myLine;
+  Acquire(PictureMyLineLock);
+  myLine = PictureMyLine++;
+  Release(PictureMyLineLock);
+  return myLine;
+}
 
-
-void PictureClerk(int id){
-    int myLine = id;
+void PictureClerk(){
+    int myLine;
     int money = 0;
     int customerFromLine;/*0 no line, 1 bribe line, 2 regular line*/
     int i;
     int customerSSN;
+
+    myLine = PictureGetMyLine();
 
     while(1){
   
@@ -1240,6 +1270,12 @@ int main() {
   SSNCount = 0;
   ApplicationMyLineLock = CreateLock();
   ApplicationMyLine = 0;
+  PictureMyLineLock = CreateLock();
+  PictureMyLine = 0;
+  PassportMyLineLock = CreateLock();
+  PassportMyLine = 0;
+  CashierMyLineLock = CreateLock();
+  CashierMyLine = 0;
 
   applicationClerkBreakCV = CreateCondition();
   pictureClerkBreakCV = CreateCondition();
@@ -1320,7 +1356,7 @@ int main() {
 
   for(i = 0; i < CLERKCOUNT; i++){
     Fork(ApplicationClerk);
-   /* Fork(PictureClerk);
+    Fork(PictureClerk);/*
     Fork(PassportClerk);
     Fork(Cashier);*/
   }

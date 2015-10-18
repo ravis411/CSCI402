@@ -502,7 +502,7 @@ void Customer(){
   int cashierDone = 0;
   int SSN = -1;
   int money = (Rand()%4)*500 + 100;
-  int appClerkFirst = Rand() % 2;
+  int appClerkFirst = true || Rand() % 2;
 
   SSN = customerCheckIn();
 

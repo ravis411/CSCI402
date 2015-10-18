@@ -182,10 +182,14 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 					// pages to be read-only
         if(i < numNonStackPages){//Not stack
             executable->ReadAt( &(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + (i * PageSize) );
+            #ifdef PAGETABLEMEMBERS
             pageTable[i].stackPage = FALSE;
+            #endif
         }else{//Stack
-            DEBUG('a', "Initializing stack page, vpn: %i\n", i); 
+            DEBUG('a', "Initializing stack page, vpn: %i\n", i);
+            #ifdef PAGETABLEMEMBERS
             pageTable[i].stackPage = TRUE;
+            #endif
         }
         pageTable[i].currentThreadID = currentThread->getThreadID();
     }
@@ -212,7 +216,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 			noffH.initData.size, noffH.initData.inFileAddr);
     }
     */
-    DEBUG('a', "Address space,initialized with with threadID: %i\n", currentThread->getThreadID()); 
+    DEBUG('a', "Address space, initialized with with threadID: %i\n", currentThread->getThreadID()); 
 }//End AddrSpace Constructor
 
 
@@ -279,8 +283,10 @@ AddrSpace::Fork(int nextInstruction)
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;
+        #ifdef PAGETABLEMEMBERS
         pageTable[i].currentThreadID = currentThread->getThreadID();
         pageTable[i].stackPage = TRUE;
+        #endif
     }
 
     numPages = newNumPages;
@@ -301,10 +307,10 @@ AddrSpace::Fork(int nextInstruction)
 //  Removes the stack for the current thread.
 ////////////////////////////////////////////////////////////////////
 void AddrSpace::Exit(){
-    DEBUG('E', "In AddrSpace::Exit\n");
+   
     unsigned int stackPagesCleared = 0;
     int currentThreadID = currentThread->getThreadID();
-
+    DEBUG('E', "In AddrSpace::Exit for thread %i\n", currentThreadID);
     //Should we really disable interrupts?
     // Would be better to acquire a lock but that has to be acquired wherever changes to these values take place...
     IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
@@ -315,6 +321,12 @@ void AddrSpace::Exit(){
     //valid = false
 
     //We need to find where our 8 pages are...This should not be dont like this...but whatever for now...
+
+
+
+
+
+    #ifdef PAGETABLEMEMBERS
     for(unsigned int i = numNonStackPages; i < numPages; i++){
         if(pageTable[i].stackPage == TRUE && pageTable[i].currentThreadID == currentThreadID){
             pageTable[i].valid = FALSE;
@@ -326,6 +338,7 @@ void AddrSpace::Exit(){
             break;
         }
     }
+    #endif
 
 
 

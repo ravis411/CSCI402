@@ -25,9 +25,10 @@
 
 class PageTableEntry: public TranslationEntry{
     public:
+    #ifdef PAGETABLEMEMBERS
     bool stackPage; //True if this is a stack page...Should be deleted when this thread is removed..?
     int currentThreadID;    //The currentThreadID
-
+    #endif
     // Assignment operator does a deep copy
     PageTableEntry &operator=(const PageTableEntry& entry);
 };

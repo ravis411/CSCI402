@@ -1245,7 +1245,6 @@ void PassportClerk(){
 
         Signal(passportClerkCV[myLine], passportClerkLock[myLine]);
         for(i = 0; i < Rand()%81 + 20; i++) {Yield(); }
-        printf("PassportClerk %i has recorded Customer %i passport documentation.\n", myLine, customerSSN);
         Acquire(printLock);
             PrintString("PassportClerk ", sizeof("PassportClerk ") );
             PrintInt(myLine);

@@ -140,7 +140,8 @@ int senatorPresentWaitOutSide = 0;/*Set by the manager to tell customers when a 
 void customerSenatorPresentWaitOutside(int SSN){
   PrintString("Customer ", sizeof("Customer ")); 
   PrintInt(SSN);
-  PrintString(" is going outside the PassportOffice because there is a Senator present.\n");
+  PrintString(" is going outside the PassportOffice because there is a Senator present.\n", 
+    sizeof(" is going outside the PassportOffice because there is a Senator present.\n"));
 
   /*Go outside.*/
   customersPresentCount--;
@@ -153,8 +154,9 @@ void customerSenatorPresentWaitOutside(int SSN){
 
 /* Checks if a senator is present. Then goes outside if there is.*/
 int customerCheckSenator(int SSN){
+  int present;
   Acquire(managerLock);
-  int present = senatorPresentWaitOutSide;
+  present = senatorPresentWaitOutSide;
 
   if(present)
     customerSenatorPresentWaitOutside(SSN);
@@ -178,7 +180,7 @@ void customerCheckOut(int SSN){
   PrintString("Customer ", sizeof("Customer ") );
   PrintInt(SSN)
   PrintString(" is leaving the Passport Office.\n", sizeof(" is leaving the Passport Office.\n"));
-  currentThread->Finish();
+  Exit(0);
 }
 
 
@@ -190,7 +192,7 @@ void Customer(){
   int SSN = -1;
   int myLine = -1;
   int money = 700; /*(rand()%4)*500 + 100;*/
-  bool appClerkFirst = 0; /*rand() % 2;*/
+  int appClerkFirst = 0; /*rand() % 2;*/
 
   customerCheckIn(SSN);
 
@@ -236,7 +238,7 @@ void checkEndOfDay(){
     /*DEBUG('s', "DEBUG: MANAGER: END OF DAY!\n");
     //All the customers are gone
     //Lets all go to sleep*/
-    THEEND = true;
+    THEEND = 1;
     Release(managerLock);
 
   /*currentThread->Finish();*/
@@ -246,30 +248,29 @@ void checkEndOfDay(){
 }
 
 
-void Manager(int id){
+void Manager(){
   int i;
   //Untill End of Simulation
-  while(true){
+  while(1){
     for(i = 0; i < 1000; i++) { 
     
 
       /*SENATORS*/
-      managerSenatorCheck();
+      /*managerSenatorCheck();*/
 
-      /*//Check Lines Wake up Clerk if More than 3 in a line.
-      //Check ApplicationClerk*/
+      /*Check Lines Wake up Clerk if More than 3 in a line.*/
       /*managerCheckandWakupClerks();*/
 
       /*Check if all the customers are gone and let all the clerks go home*/
       checkEndOfDay();
 
-      currentThread->Yield(); 
-      currentThread->Yield(); 
-      currentThread->Yield(); 
+      Yield(); 
+      Yield(); 
+      Yield(); 
     }/*Let someone else get the CPU*/
     
     /*Count and print money*/
-    managerCountMoney();
+    /*managerCountMoney();*/
   }
 
 }/*End Manager*/

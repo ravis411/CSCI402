@@ -353,10 +353,10 @@ void AddrSpace::Exit(){
 
 
     #ifdef THREADTABLE
-        DEBUG('E', "Initializing stack page threadtable, vpn: %i, for threadID: %i\n", i, currentThread->getThreadID());
         for(int i = 0; i < 8; i++){//There are 8 pages of stack...hope this dosen't change...
+            DEBUG('E', "Clearing stack page, vpn: %i, for threadID: %i\n", i, currentThread->getThreadID());
             int vpn = threadTable[currentThread->getThreadID()]->stackPages[i];
-            threadTable[currentThread->getThreadID()]->stackPages.pop_back(i);
+            threadTable[currentThread->getThreadID()]->stackPages.pop_back();
 
             pageTable[i].valid = FALSE;
             pageTableBitMap->Clear(pageTable[i].physicalPage);

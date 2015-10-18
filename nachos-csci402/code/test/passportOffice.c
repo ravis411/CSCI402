@@ -240,7 +240,7 @@ void customerCheckOut(int SSN){
 
 /*The Customer's Interaction with the applicationClerk
 *    Get their application accepted by the ApplicationClerk*/
-int customerApplicationClerkInteraction(int SSN, int *money, int VIP = 0){
+int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
   char* myType = MYTYPE(VIP);
   int bribe = (money > 500) && (Rand()%2) && !VIP;/*VIPS dont bribe...*/
@@ -348,13 +348,13 @@ void Customer(){
   SSN = customerCheckIn();
 
 
-  while(true){
+  while(1){
 
-    //Check if a senator is present and wait outside if there is.
+    /*Check if a senator is present and wait outside if there is.*/
     customerCheckSenator(SSN);
 
-    if( !(appClerkDone) && (appClerkFirst || pictureClerkDone) ){ //Go to applicationClerk
-      appClerkDone = customerApplicationClerkInteraction(SSN, money);
+    if( !(appClerkDone) && (appClerkFirst || pictureClerkDone) ){ /*Go to applicationClerk*/
+      appClerkDone = customerApplicationClerkInteraction(SSN, money, 0);
     }/*
     else if( !pictureClerkDone ){
       //Go to the picture clerk
@@ -582,7 +582,7 @@ void ApplicationClerk(){
       Signal(applicationClerkCV[myLine], applicationClerkLock[myLine]);
       Release(applicationClerkLock[myLine]);
 
-      //yield for filing time
+      /*yield for filing time*/
       for(i = 0; i < Rand()%81 + 20; i++) { Yield(); }
       
       /*TODO: NEED TO ACQUIRE A LOCK FOR THIS!!*/

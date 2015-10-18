@@ -628,7 +628,7 @@ void Customer(){
     }
     else if(!passportClerkDone){
       passportClerkDone = customerPassportClerkInteraction(SSN, &money, 0);
-      if (!passportClerkDone) { for (i = 0; i < rand() % 901 + 100; i++) { Yield(); } }
+      if (!passportClerkDone) { for (i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
     }/*
     else if(!cashierDone){
       cashierDone = customerCashierInteraction(SSN, money);

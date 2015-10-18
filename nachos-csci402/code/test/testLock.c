@@ -70,6 +70,13 @@ int main() {
     Yield();
   }
 
+  PrintString("Test For Bad input expected output are 3 error messages.\n", 
+      sizeof("Test For Bad input expected output are 3 error messages.\n"));
+  Acquire(-1);
+  Acquire(-5);
+  Release(3);
+
+
 	PrintString("Done.\n", sizeof("Done.\n"));
   Exit(0);
 }

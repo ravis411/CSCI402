@@ -48,7 +48,7 @@ void thread2(){
   PrintString(string4, sizeof(string4));
 
   Signal(condition1, lock1);
-  Wait(condition1, lock);
+  Wait(condition1, lock1);
   
   PrintString(string6, sizeof(string6));
 
@@ -80,9 +80,9 @@ int main() {
 
   PrintString("Test For Bad input expected output are 3 error messages.\n", 
       sizeof("Test For Bad input expected output are 3 error messages.\n"));
-  Wait(-1);
-  Signal(5);
-  Broadcast(3);
+  Wait(-1, 1);
+  Signal(5, 1);
+  Broadcast(3, 2);
 
 
 	PrintString("Done.\n", sizeof("Done.\n"));

@@ -349,7 +349,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
 int customerPictureClerkInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
   char* myType = MYTYPE(VIP);
-  bool bribe = (*money > 500) && (Rand()%2) && !VIP;
+  int bribe = (*money > 500) && (Rand()%2) && !VIP;
 
   Acquire(pictureClerkLineLock);
 

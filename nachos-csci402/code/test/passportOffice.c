@@ -138,7 +138,7 @@ int senatorPresentWaitOutSide = 0;/*Set by the manager to tell customers when a 
 ***************************/
 
 /*Used by customerInteractions to return customer/senator text...*/
-char[] MYTYPE(int VIP){
+char* MYTYPE(int VIP){
   if(VIP == 0){
     return CUSTOMERTEXT;
   }else if(VIP == 1){

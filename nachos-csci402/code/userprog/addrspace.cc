@@ -171,6 +171,14 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 					numPages, size);
 // first, set up the translation 
     pageTable = new PageTableEntry[numPages];
+
+
+    #ifdef THREADTABLE
+            ThreadTableEntry* t = new ThreadTableEntry();
+            t->threadID = currentThread->getThreadID();
+            //vector<ThreadTableEntry*> threadTable;
+            threadTable.insert(t->threadID, t);
+    #endif
     
     for (i = 0; i < numPages; i++) {
         int ppn = FindPPN();//The PPN of an unused page.
@@ -190,8 +198,14 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
         }else{//Stack
             DEBUG('a', "Initializing stack page, vpn: %i\n", i);
             #ifdef PAGETABLEMEMBERS
-            pageTable[i].stackPage = TRUE;
+                pageTable[i].stackPage = TRUE;
             #endif
+
+            #ifdef THREADTABLE
+                DEBUG('E', "Initializing stack page threadtable, vpn: %i, for threadID: %i", i, currentThread->getThreadID());
+                threadTable[currentThread->getThreadID()]->stackPages.push_back(i);
+            #endif
+
         }
         #ifdef PAGETABLEMEMBERS
         pageTable[i].currentThreadID = currentThread->getThreadID();

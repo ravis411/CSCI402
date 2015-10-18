@@ -22,6 +22,8 @@
 #define MaxOpenFiles 256
 #define MaxChildSpaces 256
 
+#define THREADTABLE
+//#ifdef PAGETABLEMEMBERS//This would be better...?
 
 class PageTableEntry: public TranslationEntry{
     public:
@@ -32,6 +34,16 @@ class PageTableEntry: public TranslationEntry{
     // Assignment operator does a deep copy
     PageTableEntry &operator=(const PageTableEntry& entry);
 };
+
+#ifdef THREADTABLE
+#include <map>
+#include <vector>
+class ThreadTableEntry{
+    public: 
+        int threadID;
+        vector<int> stackPages;
+};
+#endif
 
 
 class AddrSpace {
@@ -53,6 +65,10 @@ class AddrSpace {
 
  private:
     PageTableEntry *pageTable;	// Assume linear page table translation
+    #ifdef THREADTABLE
+    //vector<ThreadTableEntry*> threadTable;
+    map<int, ThreadTableEntry*> threadTable;
+    #endif
 					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
     unsigned int numNonStackPages;

@@ -34,7 +34,7 @@ int managerLock;
 int applicationClerkLock[MAXCLERKS];
 int pictureClerkLock[MAXCLERKS];
 int passportClerkLock[MAXCLERKS];
-int cashierClerkLock[MAXCLERKS];
+int cashierLock[MAXCLERKS];
 
 /***************
 * CVs
@@ -178,7 +178,7 @@ void customerCheckOut(int SSN){
   checkedOutCount++;
   Release(managerLock);
   PrintString("Customer ", sizeof("Customer ") );
-  PrintInt(SSN)
+  PrintInt(SSN);
   PrintString(" is leaving the Passport Office.\n", sizeof(" is leaving the Passport Office.\n"));
   Exit(0);
 }

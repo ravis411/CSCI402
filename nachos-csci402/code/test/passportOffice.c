@@ -421,7 +421,7 @@ int main() {
 
 
 
-  PrintString("Passport Office Closed.\n");
+  PrintString("Passport Office Closed.\n", sizeof("Passport Office Closed.\n"));
 
 
   Exit(0);

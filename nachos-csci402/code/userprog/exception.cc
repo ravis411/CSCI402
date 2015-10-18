@@ -382,6 +382,7 @@ void Exit_Syscall(int status){
 	else{
 		DEBUG('E', "Last thread in process.\n");
 		ProcessTable->deleteProcess(currentThread->space);
+		delete currentThread->space;
 	}
 	execLock.Release();
 	kernel_threadLock.Release();

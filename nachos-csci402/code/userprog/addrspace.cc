@@ -247,6 +247,11 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 
 AddrSpace::~AddrSpace()
 {
+    //Clear used pages
+    for(int i = 0; i < numPages; i++){
+        DEBUG('E', "~Addrspace: Clearing pageTableBitMap: %i\n", pageTable[i].physicalPage);
+        pageTableBitMap->Clear(pageTable[i].physicalPage);
+    }
     delete pageTable;
 }
 

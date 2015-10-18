@@ -31,6 +31,8 @@ int passportClerkLineLock;
 int cashierLineLock;
 int managerLock;
 
+int printLock;  /*For using the PrintSyscalls*/
+
 int applicationClerkLock[MAXCLERKS];
 int pictureClerkLock[MAXCLERKS];
 int passportClerkLock[MAXCLERKS];
@@ -138,10 +140,12 @@ int senatorPresentWaitOutSide = 0;/*Set by the manager to tell customers when a 
 
 /*Wait outside or something there's a Senator present*/
 void customerSenatorPresentWaitOutside(int SSN){
+  Acquire(printLock);
   PrintString("Customer ", sizeof("Customer ")); 
   PrintInt(SSN);
   PrintString(" is going outside the PassportOffice because there is a Senator present.\n", 
     sizeof(" is going outside the PassportOffice because there is a Senator present.\n"));
+  Release(printLock);
 
   /*Go outside.*/
   customersPresentCount--;
@@ -177,9 +181,11 @@ void customerCheckOut(int SSN){
   customersPresentCount--;
   checkedOutCount++;
   Release(managerLock);
+  Acquire(printLock);
   PrintString("Customer ", sizeof("Customer ") );
   PrintInt(SSN);
   PrintString(" is leaving the Passport Office.\n", sizeof(" is leaving the Passport Office.\n"));
+  Release(printLock);
   Exit(0);
 }
 
@@ -247,6 +253,135 @@ void checkEndOfDay(){
   Release(managerLock);
 }
 
+/* managerCheckandWakeupCLERK
+* checks if a line has more than 3 customers... 
+* if so, signals a clerk on break
+* Returns true if there was asleeping clerk and needed to wake one up*/
+int managerCheckandWakeupCLERK(int managerCWCLineLock, int* managerCWClineCount, int* managerCWCState, int managerCWCBreakCV, int managerCWCount){
+  int wakeUp = 0;/*should we wake up a clerk?*/
+  int asleep = 0;/*is any clerk asleep?*/
+  Acquire(managerCWCLineLock);
+  for(int i = 0; i < managerCWCount; i++){
+    if(managerCWCState[i] == ONBREAK)
+      asleep = 1;
+    if(managerCWClineCount[i] > 3)
+      wakeUp = 1;
+  }
+  if(wakeUp && asleep){Signal(managerCWCBreakCV, managerCWCLineLock);}
+  Release(managerCWCLineLock);
+  return asleep && wakeUp;
+}
+
+/*managerCheckandWakupClerks()
+* Checks all types of clerks for lines longer than 3 and wakes up a sleaping clerk if there is one*/
+void managerCheckandWakupClerks(){
+  /*Check Application Clerks*/
+  if(managerCheckandWakeupCLERK(applicationClerkLineLock, applicationClerkLineCount, applicationClerkState, applicationClerkBreakCV, CLERKCOUNT)){
+    Acquire(printLock);
+    PrintString("Manager has woken up an ApplicationClerk.\n", sizeof("Manager has woken up an ApplicationClerk.\n"));
+    Release(printLock);
+  }
+
+  /*Check Picture Clerks*/
+  if(managerCheckandWakeupCLERK(pictureClerkLineLock, pictureClerkLineCount, pictureClerkState, pictureClerkBreakCV, CLERKCOUNT)){
+    Acquire(printLock);
+    PrintString("Manager has woken up a PictureClerk.\n", sizeof("Manager has woken up a PictureClerk.\n") );
+    Release(printLock);
+  }
+  
+  /*Check Passport Clerks*/
+  if(managerCheckandWakeupCLERK(passportClerkLineLock, passportClerkLineCount, passportClerkState, passportClerkBreakCV, CLERKCOUNT)){
+    Acquire(printLock);
+    PrintString("Manager has woken up a PassportClerk.\n", sizeof("Manager has woken up a PassportClerk.\n") );
+    Release(printLock);
+  }
+
+  /*Check Cashiers*/
+  if(managerCheckandWakeupCLERK(cashierLineLock, cashierLineCount, cashierState, cashierBreakCV, CLERKCOUNT)){
+    Acquire(printLock);
+    PrintString("Manager has woken up a Cashier.\n", sizeof("Manager has woken up a Cashier.\n") );
+    Release(printLock);
+  }
+
+}
+
+/*Wake up customers in all lines*/
+void managerBroacastLine(int* line, int* bribeLine, int lock, int count){
+  /*DEBUG('s', "DEBUG: MANAGER: BROADCAST acquiring lock %s.\n", lock->getName());*/
+  Acquire(lock);
+  /*DEBUG('s', "DEBUG: MANAGER: BROADCAST acquired lock %s.\n", lock->getName());*/
+  for(int i = 0; i < count; i++){
+    Broadcast(line[i], lock);
+    Broadcast(bribeLine[i], lock);
+  }
+  Release(lock);
+  /*DEBUG('s', "DEBUG: MANAGER: BROADCAST released lock %s.\n", lock->getName());*/
+}
+void managerBroadcastCustomerLines(){
+  /*Wake up all customers in line//So they can go outside*/
+
+  /*App clerks*/
+  managerBroacastLine(applicationClerkLineCV, applicationClerkBribeLineCV, applicationClerkLineLock, CLERKCOUNT);
+  /*DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to applicaiton lines.\n");*/
+  /*Picture clerks*/
+  managerBroacastLine(pictureClerkLineCV, pictureClerkBribeLineCV, pictureClerkLineLock, CLERKCOUNT);
+  /*DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to picture lines.\n");*/
+  /*Passport Clerks*/
+  managerBroacastLine(passportClerkLineCV, passportClerkBribeLineCV, passportClerkLineLock, CLERKCOUNT);
+  /*DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to passport lines.\n");*/
+  /*Cashiers*/
+  managerBroacastLine(cashierLineCV, cashierBribeLineCV, cashierLineLock, CLERKCOUNT);
+  /*DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to cashier lines.\n");*/
+}
+
+/*Checks if a sentor is present...does somehting*/
+void managerSenatorCheck(){
+  int senatorWaiting;
+  int senatorsInside;
+  int customersInside;
+  int customersOutside;
+
+  
+  Acquire(managerLock);
+
+  senatorWaiting = (senatorLineCount > 0);
+  senatorsInside = (senatorPresentCount > 0);
+  customersInside = (customersPresentCount > 0);
+  customersOutside = (passportOfficeOutsideLineCount > 0);
+
+  //See if a senator is waiting in line...
+  if(senatorWaiting){
+    /*if(!senatorPresentWaitOutSide){ DEBUG('s', "DEBUG: MANAGER NOTICED A SENATOR!.\n"); }*/
+    senatorPresentWaitOutSide = 1;
+
+    /*Wake up customers in line so they go outside.*/
+    if(customersInside){
+      /*DEBUG('s', "DEBUG: MANAGER CUSTOMER PRESENT COUNT: %i.\n", customersPresentCount);*/
+      Release(managerLock);
+      managerBroadcastCustomerLines();
+      /*DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to customers.\n");*/
+      return;
+    }
+  }
+  
+  if(senatorWaiting && !customersInside){
+    /*if(1 || !senatorSafeToEnter) DEBUG('s', "DEBUG: MANAGER: SENATORS SAFE TO ENTER.\n");*/
+    senatorSafeToEnter = true;
+    senatorLineCV->Broadcast(managerLock);
+    /*DEBUG('s', "DEBUG: MANAGER: FINISHED BROADCAST to senators.\n");*/
+  }
+
+  if(senatorSafeToEnter && !senatorWaiting && !senatorsInside){
+    /*if(senatorSafeToEnter){DEBUG('s', "DEBUG: SENATORS GONE CUSTOMERS COME BACK IN!.\n");}*/
+    senatorSafeToEnter = 0;
+    senatorPresentWaitOutSide = 0;
+    Broadcast(passportOfficeOutsideLineCV, managerLock);
+  }
+
+
+  Release(managerLock);
+}/*End managerSenatorCheck*/
+
 
 void Manager(){
   int i;
@@ -256,10 +391,10 @@ void Manager(){
     
 
       /*SENATORS*/
-      /*managerSenatorCheck();*/
+      managerSenatorCheck();
 
       /*Check Lines Wake up Clerk if More than 3 in a line.*/
-      /*managerCheckandWakupClerks();*/
+      managerCheckandWakupClerks();
 
       /*Check if all the customers are gone and let all the clerks go home*/
       checkEndOfDay();
@@ -326,8 +461,8 @@ int main() {
   pictureClerkLineLock = CreateLock();
   passportClerkLineLock = CreateLock();
   cashierLineLock = CreateLock();
-
   managerLock = CreateLock();
+  printLock = CreateLock();
 
   applicationClerkBreakCV = CreateCondition();
   pictureClerkBreakCV = CreateCondition();
@@ -420,9 +555,9 @@ int main() {
   }
 
 
-
+  Acquire(printLock);
   PrintString("Passport Office Closed.\n", sizeof("Passport Office Closed.\n"));
-
+  Release(printLock);
 
   Exit(0);
 }

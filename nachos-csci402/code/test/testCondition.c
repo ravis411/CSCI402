@@ -60,7 +60,7 @@ void thread2(){
 
 void thread3(){
   Acquire(lock1);
-  Wait(condition2);
+  Wait(condition2, lock1);
   Release(lock1);
   Exit(0);
 }

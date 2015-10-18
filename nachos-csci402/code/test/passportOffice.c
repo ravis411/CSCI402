@@ -243,7 +243,7 @@ void customerCheckOut(int SSN){
 int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
   char* myType = MYTYPE(VIP);
-  int bribe = (money > 500) && (Rand()%2) && !VIP;/*VIPS dont bribe...*/
+  int bribe = (*money > 500) && (Rand()%2) && !VIP;/*VIPS dont bribe...*/
   /*I have decided to go to the applicationClerk*/
 
   /*I should acquire the line lock*/
@@ -305,7 +305,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
         if(customerCheckSenator(SSN))
           return 0;
       }
-      money -= 500;
+      *money -= 500;
     }
   }
   /*Clerk is AVAILABLE*/
@@ -365,7 +365,7 @@ void Customer(){
     customerCheckSenator(SSN);
 
     if( !(appClerkDone) && (appClerkFirst || pictureClerkDone) ){ /*Go to applicationClerk*/
-      appClerkDone = customerApplicationClerkInteraction(SSN, money, 0);
+      appClerkDone = customerApplicationClerkInteraction(SSN, &money, 0);
     }/*
     else if( !pictureClerkDone ){
       //Go to the picture clerk

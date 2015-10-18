@@ -351,7 +351,7 @@ void managerSenatorCheck(){
   customersInside = (customersPresentCount > 0);
   customersOutside = (passportOfficeOutsideLineCount > 0);
 
-  //See if a senator is waiting in line...
+  /*See if a senator is waiting in line...*/
   if(senatorWaiting){
     /*if(!senatorPresentWaitOutSide){ DEBUG('s', "DEBUG: MANAGER NOTICED A SENATOR!.\n"); }*/
     senatorPresentWaitOutSide = 1;

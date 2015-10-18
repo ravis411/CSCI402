@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
+#include "synch.h"
+#include "bitmap.h"
 using namespace std;
 
 int copyin(unsigned int vaddr, int len, char *buf) {
@@ -236,7 +238,6 @@ void Close_Syscall(int fd) {
 	Our implementations for proj2 above code was provided
 	*****************************************************/
 
-#include "synch.h"
 Lock kernel_threadLock("Kernel Thread Lock");
 //int forkCalled = 0;
 
@@ -426,14 +427,41 @@ void PrintString_Syscall(unsigned int vaddr, int len){
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+//	Lock Syscalls
+///////////////////////////////////////////////////////////////////////////////////////////
+class LockTableEntry{
+	Lock* lock;
+	AddrSpace* space;
+	bool isToBeDeleted;
+};
+#define lockTableSize 100
+BitMap lockTableBitMap(lockTableSize);
+vector<LockTableEntry*> lockTable(lockTableSize, NULL);
+
 
 ///////////////////////////////
 // Creates the Lock
 ///////////////////////////////
 int CreateLock_Syscall(){
-	DEBUG('L', "In CreateLock_Syscall");
+	DEBUG('L', "In CreateLock_Syscall\n");
 
-	return -1;
+	int lockTableIndex = lockTableBitMap.Find();
+	if(lockTableIndex == -1){
+		printf("Max Number of Locks created. Unable to CreateLock\n");
+		return -1;
+	}
+
+	LockTableEntry* te = new LockTableEntry();
+	te->lock = new Lock("Lock " + lockTableIndex);
+	te->space = currentThread->space;
+	te->isToBeDeleted = FALSE;
+
+	lockTable[lockTableIndex] = te;
+
+	return lockTableIndex;
 }
 
 
@@ -441,18 +469,55 @@ int CreateLock_Syscall(){
 *	Acquire the lock
 */
 void Acquire_Syscall(int lock){
-	DEBUG('L', "In Acquire_Syscall");
+	DEBUG('L', "In Acquire_Syscall\n");
+
+	if(lock < 0 || lock >= lockTableSize){
+		printf("Invalid Lock Identifier: %i\n", lock);
+		return;
+	}
+
+	LockTableEntry* lockEntry = lockTable[lock];
+
+	if(lockEntry->space != currentThread->space){
+		printf("Lock %i does not belong to this process. Unable to Acquire.\n", lock);
+		return;
+	}
+
+	DEBUG('L', "Acquiring lock.\n");
+	lockEntry->lock->Acquire();
+
 }
 
 /*****************
 * 	Release the lock
 */
 void Release_Syscall(int lock){
-	DEBUG('L', "In Release_Syscall");
+	DEBUG('L', "In Release_Syscall\n");
+
+	if(lock < 0 || lock >= lockTableSize){
+		printf("Invalid Lock Identifier: %i\n", lock);
+		return;
+	}
+
+	LockTableEntry* lockEntry = lockTable[lock];
+
+	if(lockEntry->space != currentThread->space){
+		printf("Lock %i does not belong to this process. Unable to Release.\n", lock);
+		return;
+	}
+	
+	DEBUG('L', "Releasing lock.\n");
+	lockEntry->lock->Release();
+	/*
+	if(lockEntry->isToBeDeleted && notBusy){
+		delete lock;
+		lock = NULL;
+	}
+	*/
 }
 
 void DestroyLock_Syscall(int lock){
-	DEBUG('L', "In DestroyLock_Syscall");
+	DEBUG('L', "In DestroyLock_Syscall\n");
 }
 
 /*************************
@@ -461,25 +526,25 @@ void DestroyLock_Syscall(int lock){
 *
 **************************/
 int CreateCondition_Syscall(){
-	DEBUG('C', "In CreateCondition_Syscall");
+	DEBUG('C', "In CreateCondition_Syscall\n");
 	return -1;
 }
 
 void Wait_Syscall(int condition, int lock){
-	DEBUG('C', "In Wait_Syscall");
+	DEBUG('C', "In Wait_Syscall\n");
 
 }
 
 void Signal_Syscall(int condition, int lock){
-	DEBUG('C', "In Signal_Syscall");
+	DEBUG('C', "In Signal_Syscall\n");
 }
 
 void Broadcast_Syscall(int condition, int lock){
-	DEBUG('C', "In Broadcast_Syscall");
+	DEBUG('C', "In Broadcast_Syscall\n");
 }
 
 void DestroyCondition_Syscall(int condition){
-	DEBUG('C', "In DestroyCondition_Syscall");
+	DEBUG('C', "In DestroyCondition_Syscall\n");
 }
 
 

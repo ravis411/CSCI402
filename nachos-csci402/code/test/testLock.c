@@ -4,41 +4,45 @@
 
 #include "syscall.h"
 
-#define arrySize 20
+char welcomeString[] = "\nLock Syscall test...\n\n";
+char string1[] = "String 1...\n";
+char string2[] = "String 2...\n";
+char string3[] = "String 3...\n";
+char string4[] = "String 4...\n";
+char string5[] = "String 5...\n";
+char string6[] = "String 6...\n";
 
- int arry[arrySize];
- char welcomeString[] = "\nLock Syscall test...\n\n";
+int lock1;
+int done = 0;
 
 
 void function1(){
-  PrintString("\nSuccessfully Forked Function1.\n", sizeof("\nSuccessfully Forked Function1.\n"));
+  Acquire(lock1);
+  PrintString(string1, sizeof(string1));
+  Release(lock1);
+  Acquire(lock1);
+  PrintString(string3, sizeof(string3));
+  Release(lock1);
+  Acquire(lock1);
+  PrintString(string5, sizeof(string5));
+  Release(lock1);
   Exit(0);
 
 }
 
 void thread2(){
-  PrintString( "\nSuccessfully Forked Thread2.\n", sizeof("\nSuccessfully Forked Thread2.\n"));
+  Acquire(lock1);
+  PrintString(string2, sizeof(string2));
+  Release(lock1);
+  Acquire(lock1);
+  PrintString(string4, sizeof(string4));
+  Release(lock1);
+  Acquire(lock1);
+  PrintString(string6, sizeof(string6));
+  Release(lock1);
+  done = 1;
   Exit(0);
 }
-
-void thread3(){
-  int i;
-  PrintString("\nSucessfully Forked Thread3.\n", sizeof("\nSucessfully Forked Thread3.\n"));
-  for(i = 0; i < 10; i++)
-    PrintInt(i);
-  Exit(0);
-}
-
-void thread4(){
-  int i;
-  /*char testString[] = "Thread4 Done.\n"; WHY CANT WE DO SOMETHING LIKE THIS!!! UGGHGH*/
-  PrintString("\nSucessfully Forked Thread4.\n", sizeof("\nSucessfully Forked Thread4.\n"));
-  for(i = 0; i < 10; i++)
-    PrintInt(i);
-  Write("\nThread4 Done.\n", sizeof("\nThread4 Done.\n"), ConsoleOutput);
-  Exit(0);
-}
-
 
 
 int main() {
@@ -52,11 +56,20 @@ int main() {
 
   Acquire(lock1);
   PrintString("Lock Acquired.\n", sizeof("Lock Acquired.\n") );
+
+  Fork(function1);
+  Fork(thread2);
+
+
   Release(lock1);
 
   DestroyLock(lock1);
 	
 	
-	PrintString("\n", 1);
+  while(done == 0){
+    Yield();
+  }
+
+	PrintString("Done.\n", sizeof("Done.\n"));
   Exit(0);
 }

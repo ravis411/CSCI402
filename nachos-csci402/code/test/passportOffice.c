@@ -260,8 +260,9 @@ void checkEndOfDay(){
 int managerCheckandWakeupCLERK(int managerCWCLineLock, int* managerCWClineCount, int* managerCWCState, int managerCWCBreakCV, int managerCWCount){
   int wakeUp = 0;/*should we wake up a clerk?*/
   int asleep = 0;/*is any clerk asleep?*/
+  int i;
   Acquire(managerCWCLineLock);
-  for(int i = 0; i < managerCWCount; i++){
+  for(i = 0; i < managerCWCount; i++){
     if(managerCWCState[i] == ONBREAK)
       asleep = 1;
     if(managerCWClineCount[i] > 3)
@@ -307,10 +308,11 @@ void managerCheckandWakupClerks(){
 
 /*Wake up customers in all lines*/
 void managerBroacastLine(int* line, int* bribeLine, int lock, int count){
+  int i;
   /*DEBUG('s', "DEBUG: MANAGER: BROADCAST acquiring lock %s.\n", lock->getName());*/
   Acquire(lock);
   /*DEBUG('s', "DEBUG: MANAGER: BROADCAST acquired lock %s.\n", lock->getName());*/
-  for(int i = 0; i < count; i++){
+  for(i = 0; i < count; i++){
     Broadcast(line[i], lock);
     Broadcast(bribeLine[i], lock);
   }

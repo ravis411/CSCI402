@@ -251,7 +251,7 @@ void customerCheckOut(int SSN){
 *    Get their application accepted by the ApplicationClerk*/
 int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
-  char* myType = MYTYPE(VIP);
+  char myType[] = MYTYPE(VIP);
   int bribe = (*money > 500) && (Rand()%2) && !VIP;/*VIPS dont bribe...*/
   /*I have decided to go to the applicationClerk*/
 
@@ -354,7 +354,7 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
 //Get their picture accepted by the pictureClerk*/
 int customerPictureClerkInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
-  char* myType = MYTYPE(VIP);
+  char[] myType = MYTYPE(VIP);
   int bribe = (*money > 500) && (Rand()%2) && !VIP;
 
   Acquire(pictureClerkLineLock);

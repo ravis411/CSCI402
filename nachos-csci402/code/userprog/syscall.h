@@ -176,7 +176,7 @@ void Broadcast(int condition, int lock);
 void DestroyCondition(int condition);
 
 
-//rand()
+/*rand()*/
 int Rand();
 
 

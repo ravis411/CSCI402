@@ -135,7 +135,7 @@ char* MYTYPE(int VIP){
   }else if(VIP == 1){
     return SENATORTEXT;
   }else{
-    return -1;
+    return "NULL";
   }
 }
 

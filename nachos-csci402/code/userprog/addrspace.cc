@@ -92,8 +92,10 @@ PageTableEntry &PageTableEntry::operator=(const PageTableEntry& entry){
         use = entry.use;
         dirty = entry.dirty;
         readOnly = entry.readOnly;
+        #ifdef PAGETABLEMEMBERS
         stackPage = entry.stackPage;
         currentThreadID = entry.currentThreadID;
+        #endif
     }
     return *this;
 }
@@ -191,7 +193,9 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
             pageTable[i].stackPage = TRUE;
             #endif
         }
+        #ifdef PAGETABLEMEMBERS
         pageTable[i].currentThreadID = currentThread->getThreadID();
+        #endif
     }
 
     //We need to remember where this thread's stack is...

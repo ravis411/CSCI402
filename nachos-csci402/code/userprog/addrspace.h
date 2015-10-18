@@ -38,6 +38,7 @@ class PageTableEntry: public TranslationEntry{
 #ifdef THREADTABLE
 #include <map>
 #include <vector>
+using namespace std;
 class ThreadTableEntry{
     public: 
         int threadID;

@@ -362,6 +362,7 @@ void Exit_Syscall(int status){
 	if(p->getNumThreads() > 1){
 		p->removeThread();
 		DEBUG('E', "Not the last thread. Left: %i \n", p->getNumThreads());
+		currentThread->space->Exit();
 	}
 	//Case 2
 		//Last executing thread in last process

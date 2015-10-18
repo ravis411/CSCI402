@@ -177,7 +177,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
             ThreadTableEntry* t = new ThreadTableEntry();
             t->threadID = currentThread->getThreadID();
             //vector<ThreadTableEntry*> threadTable;
-            threadTable.insert(t->threadID, t);
+            threadTable.insert(pair<int, ThreadTableEntry*>(t->threadID, t));
     #endif
     
     for (i = 0; i < numPages; i++) {
@@ -202,7 +202,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
             #endif
 
             #ifdef THREADTABLE
-                DEBUG('E', "Initializing stack page threadtable, vpn: %i, for threadID: %i", i, currentThread->getThreadID());
+                DEBUG('E', "Initializing stack page threadtable, vpn: %i, for threadID: %i\n", i, currentThread->getThreadID());
                 threadTable[currentThread->getThreadID()]->stackPages.push_back(i);
             #endif
 
@@ -293,6 +293,13 @@ AddrSpace::Fork(int nextInstruction)
     delete pageTable;
     pageTable = newPageTable;
 
+    #ifdef THREADTABLE
+            ThreadTableEntry* t = new ThreadTableEntry();
+            t->threadID = currentThread->getThreadID();
+            //vector<ThreadTableEntry*> threadTable;
+            threadTable.insert(pair<int, ThreadTableEntry*>(t->threadID, t));
+    #endif
+
     //Add 8 pages for stack
     for(unsigned int i = numPages; i < newNumPages; i++){
         pageTable[i].virtualPage = i;
@@ -304,6 +311,10 @@ AddrSpace::Fork(int nextInstruction)
         #ifdef PAGETABLEMEMBERS
         pageTable[i].currentThreadID = currentThread->getThreadID();
         pageTable[i].stackPage = TRUE;
+        #endif
+        #ifdef THREADTABLE
+            DEBUG('E', "Initializing stack page threadtable, vpn: %i, for threadID: %i\n", i, currentThread->getThreadID());
+            threadTable[currentThread->getThreadID()]->stackPages.push_back(i);
         #endif
     }
 
@@ -341,7 +352,19 @@ void AddrSpace::Exit(){
     //We need to find where our 8 pages are...This should not be dont like this...but whatever for now...
 
 
+    #ifdef THREADTABLE
+        DEBUG('E', "Initializing stack page threadtable, vpn: %i, for threadID: %i\n", i, currentThread->getThreadID());
+        for(int i = 0; i < 8; i++){//There are 8 pages of stack...hope this dosen't change...
+            int vpn = threadTable[currentThread->getThreadID()]->stackPages[i];
+            threadTable[currentThread->getThreadID()]->stackPages.pop_back(i);
 
+            pageTable[i].valid = FALSE;
+            pageTableBitMap->Clear(pageTable[i].physicalPage);
+            pageTable[i].physicalPage = -1;
+            stackPagesCleared++;
+        }
+        
+    #endif
 
 
     #ifdef PAGETABLEMEMBERS
@@ -362,7 +385,7 @@ void AddrSpace::Exit(){
 
     (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
 
-    ASSERT( stackPagesCleared == (UserStackSize * PageSize) );
+    ASSERT( stackPagesCleared == (UserStackSize / PageSize) );
     DEBUG('E', "End AddrSpace::Exit\n");
 
 }//End Exit

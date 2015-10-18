@@ -22,6 +22,9 @@ int THEEND = 0;
 char CUSTOMERTEXT[] = "Customer";
 char SENATORTEXT[] = "Senator";
 
+#define true 1
+#define false 0
+
 /***********
 * Locks
 *********/
@@ -341,6 +344,151 @@ int customerApplicationClerkInteraction(int SSN, int *money, int VIP){
 
 
 
+/*The Customer's Interaction with the pictureClerk
+//Get their picture accepted by the pictureClerk*/
+int customerPictureClerkInteraction(int SSN, int *money, int VIP){
+  int myLine = -1;
+  char* myType = MYTYPE(VIP);
+  bool bribe = (*money > 500) && (Rand()%2) && !VIP;
+
+  Acquire(pictureClerkLineLock);
+
+  if(!bribe){
+    myLine = pickShortestLine(pictureClerkLineCount, pictureClerkState);
+  }else{
+    myLine = pickShortestLine(pictureClerkBribeLineCount, pictureClerkState);
+  }
+  
+  if(pictureClerkState[myLine] != AVAILABLE){
+    if(!bribe){
+      pictureClerkLineCount[myLine]++;
+      /*printf("%s %i has gotten in regular line for PictureClerk %i.\n", myType, SSN, myLine);*/
+       Acquire(printLock);
+          PrintString(myType, sizeof(myType));
+          PrintString(" ", 1);
+          PrintInt(SSN);
+          PrintString(" has gotten in regular line for PictureClerk ", 
+              sizeof(" has gotten in regular line for PictureClerk ") );
+          PrintInt(myLine);
+          PrintString(".\n", 2);
+      Release(printLock);
+      Wait(pictureClerkLineCV[myLine], pictureClerkLineLock);
+      pictureClerkLineCount[myLine]--;
+      if(pictureClerkState[myLine] != SIGNALEDCUSTOMER){
+        Release(pictureClerkLineLock);
+        if(customerCheckSenator(SSN))
+          return false;
+      }
+    }else{
+      pictureClerkBribeLineCount[myLine]++;
+      /*printf("%s %i has gotten in bribe line for PictureClerk %i.\n", myType, SSN, myLine);*/
+      Acquire(printLock);
+          PrintString(myType, sizeof(myType));
+          PrintString(" ", 1);
+          PrintInt(SSN);
+          PrintString(" has gotten in bribe line for PictureClerk ", 
+              sizeof(" has gotten in bribe line for PictureClerk ") );
+          PrintInt(myLine);
+          PrintString(".\n", 2);
+      Release(printLock);
+
+      Wait(pictureClerkBribeLineCV[myLine], pictureClerkLineLock);
+      pictureClerkBribeLineCount[myLine]--;
+      if(pictureClerkState[myLine] != SIGNALEDCUSTOMER){
+        Release(pictureClerkLineLock);
+        if(customerCheckSenator(SSN))
+          return false;
+      }
+      *money -= 500;
+    }
+  }
+
+  pictureClerkState[myLine] = BUSY;
+  Release(pictureClerkLineLock);
+
+  Acquire(pictureClerkLock[myLine]);
+ 
+  pictureClerkSharedDataSSN[myLine] = SSN;
+  Acquire(printLock);
+      PrintString(myType, sizeof(myType));
+      PrintString(" ", 1);
+      PrintInt(SSN);
+      PrintString(" has given SSN ", sizeof(" has given SSN "));
+      PrintInt(SSN);
+      PrintString(" to PictureClerk ", sizeof(" to PictureClerk ") );
+      PrintInt(myLine);
+      PrintString(".\n", 2);
+  Release(printLock);
+
+
+  Signal(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+  Wait(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+
+
+  while(pictureClerkSharedDataPicture[myLine] == 0) {
+    if(Rand()%10 > 7) {
+      Acquire(printLock);
+          PrintString(myType, sizeof(myType));
+          PrintString(" ", 1);
+          PrintInt(SSN);
+          PrintString(" does not like their picture from PictureClerk ",
+               sizeof(" does not like their picture from PictureClerk "));
+          PrintInt(myLine);
+          PrintString(".\n", 2);
+      Release(printLock);
+      pictureClerkSharedDataPicture[myLine] = 0;
+      Signal(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+
+      Wait(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+    }
+    else {
+      printf("%s %i does like their picture from PictureClerk %i.\n", myType, SSN, myLine);
+      Acquire(printLock);
+          PrintString(myType, sizeof(myType));
+          PrintString(" ", 1);
+          PrintInt(SSN);
+          PrintString(" does like their picture from PictureClerk ",
+               sizeof(" does like their picture from PictureClerk "));
+          PrintInt(myLine);
+          PrintString(".\n", 2);
+      Release(printLock);
+      pictureClerkSharedDataPicture[myLine] = 1;
+      Signal(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+
+      Wait(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+    }
+  }
+  Release(pictureClerkLock[myLine]);
+
+  return true;
+}/*End customerPictureClerkInteraction*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -353,8 +501,8 @@ void Customer(){
   int passportClerkDone = 0;
   int cashierDone = 0;
   int SSN = -1;
-  int money = 700; /*(rand()%4)*500 + 100;*/
-  int appClerkFirst = 1; /*rand() % 2;*/
+  int money = (Rand()%4)*500 + 100;
+  int appClerkFirst = Rand() % 2;
 
   SSN = customerCheckIn();
 
@@ -366,11 +514,11 @@ void Customer(){
 
     if( !(appClerkDone) && (appClerkFirst || pictureClerkDone) ){ /*Go to applicationClerk*/
       appClerkDone = customerApplicationClerkInteraction(SSN, &money, 0);
-    }/*
-    else if( !pictureClerkDone ){
-      //Go to the picture clerk
-      pictureClerkDone = customerPictureClerkInteraction(SSN, money);
     }
+    else if( !pictureClerkDone ){
+      /*Go to the picture clerk*/
+      pictureClerkDone = customerPictureClerkInteraction(SSN, &money);
+    }/*
     else if(!passportClerkDone){
       passportClerkDone = customerPassportClerkInteraction(SSN, money);
       if (!passportClerkDone) { for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }
@@ -624,6 +772,193 @@ void ApplicationClerk(){
 
 
 
+
+
+
+
+
+
+/*****************************************
+* PictureClerk
+*******************************************/
+
+
+/*Utility for applicationClerk to gon on brak
+// Assumptions: called with clerkLineLock*/
+void pictureClerkcheckAndGoOnBreak(int myLine){
+  int i;
+
+  int freeOrAvailable = false;
+  for(i = 0; i < CLERKCOUNT; i++){
+    if(i != myLine && ( pictureClerkState[i] == AVAILABLE || pictureClerkState[i] == BUSY ) ){
+      freeOrAvailable = true;
+      break;
+    }
+  }
+
+  if(freeOrAvailable){
+    pictureClerkState[myLine] = ONBREAK;
+    Acquire(printLock);
+      PrintString("PictureClerk ", sizeof("PictureClerk ") );
+      PrintInt(myLine);
+      PrintString(" is going on break.\n", sizeof(" is going on break.\n") );
+    Release(printLock);
+    Wait(pictureClerkBreakCV, pictureClerkLineLock);
+    pictureClerkState[myLine] = BUSY;
+    Acquire(printLock);
+      PrintString("PictureClerk ", sizeof("PictureClerk ") );
+      PrintInt(myLine);
+      PrintString(" is coming off break.\n", sizeof(" is coming off break.\n") );
+    Release(printLock);
+  }else{
+
+    Release(pictureClerkLineLock);
+
+    Acquire(managerLock);
+    if(checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){Release(managerLock); Exit(0);}
+    Release(managerLock);
+    Yield();
+
+    Acquire(pictureClerkLineLock);
+  }
+  /*applicationClerkState[myLine] = AVAILABLE;*/
+}
+
+
+
+void PictureClerk(int id){
+    int myLine = id;
+    int money = 0;
+    int customerFromLine;/*0 no line, 1 bribe line, 2 regular line*/
+    int i;
+    int customerSSN;
+
+    while(1){
+  
+      if(clerkCheckForSenator()) continue; /*Waiting for senators to enter just continue.*/
+
+      Acquire(pictureClerkLineLock);
+      /*DEBUG('p', "DEBUG: PictureClerk %i pICTURECLERKLINELOCK acquired top of while\n", myLine);*/
+
+      /*If there is someone in my bribe line*/
+      if(pictureClerkBribeLineCount[myLine] > 0){
+        customerFromLine = 1;
+        Signal(pictureClerkBribeLineCV[myLine], pictureClerkLineLock);
+        pictureClerkState[myLine] = SIGNALEDCUSTOMER;
+      }else if(pictureClerkLineCount[myLine] > 0){//if there is someone in my regular line
+        customerFromLine = 2;
+        Signal(pictureClerkLineCV[myLine], pictureClerkLineLock);
+        pictureClerkState[myLine] = SIGNALEDCUSTOMER;
+      }else{
+        /*Go on a break!*/
+        customerFromLine = 0;
+        pictureClerkcheckAndGoOnBreak(myLine);
+        Release(pictureClerkLineLock);
+        /*DEBUG('p', "DEBUG: PictureClerk %i pICTURECLERKLINELOCK released after checkbreak.\n", myLine);*/
+      }
+
+      /*Should only do this when we are BUSY? We have a customer...*/
+      if(customerFromLine != 0){
+        Acquire(printLock);
+          PrintString("PictureClerk ", sizeof("PictureClerk "));
+          PrintInt(myLine);
+          PrintString(" has signalled a Customer to come to their counter.\n" ,
+               sizeof(" has signalled a Customer to come to their counter.\n"));
+        Release(printLock);
+
+        Acquire(pictureClerkLock[myLine]);
+      /*  pictureClerkSharedDataPicture[myLine] = 0;*/
+        Release(pictureClerkLineLock);
+        /*DEBUG('p', "DEBUG: PictureClerk %i pICTURECLERKLINELOCK released after signalling customer.\n", myLine);*/
+        /*wait for customer data*/
+        Wait(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+        /*Customer Has given me their SSN?
+        //And I have a lock*/
+        customerSSN = pictureClerkSharedDataSSN[myLine];
+        /*Customer from bribe line? //maybe should be separate signalwait  ehh?*/
+      if(customerFromLine == 1){
+        money += 500;
+        /*printf("PictureClerk %i has received $500 from Customer %i.\n", myLine, customerSSN);*/
+        Acquire(printLock);
+          PrintString("PictureClerk ", sizeof("PictureClerk "));
+          PrintInt(myLine);
+          PrintString(" has received $500 from Customer " ,
+               sizeof(" has received $500 from Customer "));
+          PrintInt(customerSSN);
+          PrintString(".\n", 2);
+        Release(printLock);
+
+        Yield();/*Just to change things up a bit.*/
+      }
+      
+        /*printf("PictureClerk %i has received SSN %i from Customer %i.\n", myLine, customerSSN, customerSSN);*/
+        Acquire(printLock);
+          PrintString("PictureClerk ", sizeof("PictureClerk "));
+          PrintInt(myLine);
+          PrintString("  has received SSN ", sizeof("  has received SSN ") );
+          PrintInt(customerSSN);
+          PrintString(" from Customer " , sizeof(" from Customer "));
+          PrintInt(customerSSN);
+          PrintString(".\n", 2);
+        Release(printLock);
+
+        pictureClerkSharedDataPicture[myLine] = 0;
+        while(pictureClerkSharedDataPicture[myLine] == 0) {
+          /*Taking picture*/
+          /*printf("PictureClerk %i has taken a picture of Customer %i.\n", myLine, customerSSN);*/
+          Acquire(printLock);
+              PrintString("PictureClerk ", sizeof("PictureClerk "));
+              PrintInt(myLine);
+              PrintString(" has taken a picture of Customer ", sizeof(" has taken a picture of Customer ") );
+              PrintInt(customerSSN);
+              PrintString(".\n", 2);
+          Release(printLock);
+
+
+          /*Signal Customer that I'm Done and show them the picture. Then wait for response.*/
+          Signal(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+          Wait(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+          if(pictureClerkSharedDataPicture[myLine] == 0)  {
+            /*printf("PictureClerk %i has has been told that Customer %i does not like their picture.\n", myLine, customerSSN);*/
+            Acquire(printLock);
+              PrintString("PictureClerk ", sizeof("PictureClerk "));
+              PrintInt(myLine);
+              PrintString(" has taken been told that Customer ", sizeof(" has taken been told that Customer ") );
+              PrintInt(customerSSN);
+              PrintString(" does not like their picture.\n", sizeof(" does not like their picture.\n"));
+            Release(printLock);
+          }
+
+        }
+        /*printf("PictureClerk %i has has been told that Customer %i does like their picture.\n", myLine, customerSSN);*/
+        Acquire(printLock);
+          PrintString("PictureClerk ", sizeof("PictureClerk "));
+          PrintInt(myLine);
+          PrintString(" has taken been told that Customer ", sizeof(" has taken been told that Customer ") );
+          PrintInt(customerSSN);
+          PrintString(" does like their picture.\n", sizeof(" does like their picture.\n"));
+        Release(printLock);
+        /*Yield before submitting.*/
+        /*Signal Customer that I'm Done.*/
+        Signal(pictureClerkCV[myLine], pictureClerkLock[myLine]);
+        for(i = 0; i < Rand()%81 + 20; i++) { Yield(); }
+        /*printf("PictureClerk %i has recorded a completed picture for Customer %i.\n", myLine, customerSSN);*/
+          Acquire(printLock);
+              PrintString("PictureClerk ", sizeof("PictureClerk "));
+              PrintInt(myLine);
+              PrintString(" has recorded a completed picture for Customer ", sizeof(" has recorded a completed picture for Customer ") );
+              PrintInt(customerSSN);
+              PrintString(".\n", sizeof(".\n"));
+            Release(printLock);
+        pictureCompletion[customerSSN] = 1;
+
+
+        Release(pictureClerkLock[myLine]);
+      }
+  
+    }
+
+}/*End PictureClerk*/
 
 
 

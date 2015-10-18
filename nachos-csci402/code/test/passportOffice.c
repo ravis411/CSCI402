@@ -971,13 +971,13 @@ int main() {
     Fork(Senator);
   }*/
 
-/*
+
   for(i = 0; i < CLERKCOUNT; i++){
     Fork(ApplicationClerk);
-    Fork(PictureClerk);
+   /* Fork(PictureClerk);
     Fork(PassportClerk);
-    Fork(Cashier);
-  }*/
+    Fork(Cashier);*/
+  }
 
   Fork(Manager);
 

@@ -479,6 +479,10 @@ void Acquire_Syscall(int lock){
 
 	LockTableEntry* lockEntry = lockTable[lock];
 
+	if(lockEntry == NULL){
+		printf("Lock %i does not exist. Unable to Acquire.\n", lock);
+		return;
+	}
 	if(lockEntry->space != currentThread->space){
 		printf("Lock %i does not belong to this process. Unable to Acquire.\n", lock);
 		return;
@@ -501,7 +505,10 @@ void Release_Syscall(int lock){
 	}
 
 	LockTableEntry* lockEntry = lockTable[lock];
-
+	if(lockEntry == NULL){
+		printf("Lock %i does not exist. Unable to Release.\n", lock);
+		return;
+	}
 	if(lockEntry->space != currentThread->space){
 		printf("Lock %i does not belong to this process. Unable to Release.\n", lock);
 		return;

@@ -5,8 +5,8 @@
 #include "syscall.h"
 
 #define CLERKCOUNT  2
-#define CUSTOMERCOUNT 3
-#define SENATORCOUNT  0
+#define CUSTOMERCOUNT 2
+#define SENATORCOUNT  1
 
 #define MAXCLERKS 5
 #define MAXCUSTOMERS 50

@@ -807,8 +807,9 @@ void senatorLeavePassportOffice(int SSN){
 }
 void Senator(){
   int SSN;
+  int i;
   int money = (Rand()%4)*500 + 100;
-  int appClerkDone = false; //State vars
+  int appClerkDone = false;
   int pictureClerkDone = false;
   int passportClerkDone = false;
   int cashierDone = false; 
@@ -831,11 +832,11 @@ void Senator(){
     }
     else if(!passportClerkDone){
       passportClerkDone = customerPassportClerkInteraction(SSN, &money, 1);
-      if (!passportClerkDone) { for (int i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
+      if (!passportClerkDone) { for (i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
     }
     else if(!cashierDone){
       cashierDone = customerCashierInteraction(SSN, money, 1);
-      if (!cashierDone) { for (int i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
+      if (!cashierDone) { for (i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
     }
   }
 

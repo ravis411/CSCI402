@@ -5,7 +5,7 @@
 #include "syscall.h"
 
  char welcomeString[] = "\nStarting 2 passportOffce.c...\n\n\n";
- char fileName[] = "../test/passportOffce";
+ char fileName[] = "../test/passportOffice";
 
 int main() {
 

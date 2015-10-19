@@ -578,22 +578,17 @@ int customerPassportClerkInteraction(int SSN, int *money, int VIP){
 int customerCashierInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
   char* myType = MYTYPE(VIP);
-  bool bribe = (*money > 500) && (rand()%2) && !VIP;
+  int bribe = (*money > 500) && (rand()%2) && !VIP;
 
-  //I should acquire the line lock
+
   Acquire(cashierLineLock);
-  //lock acquired
 
-  //Can I go to counter, or have to wait? Should i bribe?
-  //Pick shortest line with clerk not on break
-  //Should i get in the regular line else i should bribe?
-  if(!bribe){ //Get in regular line
+  if(!bribe){
     myLine = pickShortestLine(cashierLineCount, cashierState);
-  }else{ //get in bribe line
+  }else{ 
     myLine = pickShortestLine(cashierBribeLineCount, cashierState);
   }
   
-  //I must wait in line
   if(cashierState[myLine] != AVAILABLE){
     if(!bribe){
       cashierLineCount[myLine]++;
@@ -747,7 +742,7 @@ void Customer(){
       if (!passportClerkDone) { for (i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
     }
     else if(!cashierDone){
-      cashierDone = customerCashierInteraction(SSN, money);
+      cashierDone = customerCashierInteraction(SSN, &money, 0);
       if (!cashierDone) { for (i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
     }
     else{
@@ -1495,7 +1490,7 @@ void Cashier(){
             PrintInt(customerSSN);
             PrintString(".\n", 2);
         Release(printLock);
-        Yield();//Just to change things up a bit.
+        Yield();
       }
       
 

@@ -578,7 +578,7 @@ int customerPassportClerkInteraction(int SSN, int *money, int VIP){
 int customerCashierInteraction(int SSN, int *money, int VIP){
   int myLine = -1;
   char* myType = MYTYPE(VIP);
-  int bribe = (*money > 500) && (rand()%2) && !VIP;
+  int bribe = (*money > 500) && (Rand()%2) && !VIP;
 
 
   Acquire(cashierLineLock);

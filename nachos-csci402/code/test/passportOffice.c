@@ -6,7 +6,7 @@
 
 #define CLERKCOUNT  2
 #define CUSTOMERCOUNT 3
-#define SENATORCOUNT  0
+#define SENATORCOUNT  2
 
 #define MAXCLERKS 5
 #define MAXCUSTOMERS 50
@@ -769,6 +769,81 @@ void Customer(){
 
 
 
+/**************************************
+**
+**  Senator
+**
+******************************************/
+int senatorArriveAtPassportOffice(){
+  int SSN;
+
+  Acquire(SSNLock);
+    SSN = SSNCount++;
+  Release(SSNLock);
+
+  Acquire(managerLock);
+  while(!senatorSafeToEnter){
+    senatorLineCount++;
+    Wait(senatorLineCV, managerLock);
+    senatorLineCount--;
+  }
+  senatorPresentCount++;
+  Release(managerLock);
+
+  return SSN;
+}
+
+void senatorLeavePassportOffice(int SSN){
+  Acquire(managerLock);
+  senatorPresentCount--;
+  checkedOutCount++;
+  Release(managerLock);
+
+  Acquire(printLock);
+      PrintString("Senator ", sizeof("Senator "));
+      PrintInt(SSN);
+      PrintString(" is leaving the Passport Office.\n", sizeof(" is leaving the Passport Office.\n") );
+  Release(printLock);
+}
+void Senator(){
+  int SSN;
+  int money = (Rand()%4)*500 + 100;
+  int appClerkDone = false; //State vars
+  int pictureClerkDone = false;
+  int passportClerkDone = false;
+  int cashierDone = false; 
+  int appClerkFirst = rand() % 2;
+
+
+
+  /*Check in*/
+  SSN = senatorArriveAtPassportOffice();
+
+  /*Safe to do 'normal' interactions now....*/
+
+  while(!cashierDone){
+
+    if( !(appClerkDone) && (appClerkFirst || pictureClerkDone) ){
+      appClerkDone = customerApplicationClerkInteraction(SSN, &money, 1);
+    }
+    else if( !pictureClerkDone ){
+      pictureClerkDone = customerPictureClerkInteraction(SSN, &money, 1);
+    }
+    else if(!passportClerkDone){
+      passportClerkDone = customerPassportClerkInteraction(SSN, &money, 1);
+      if (!passportClerkDone) { for (int i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
+    }
+    else if(!cashierDone){
+      cashierDone = customerCashierInteraction(SSN, money, 1);
+      if (!cashierDone) { for (int i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
+    }
+  }
+
+  /*Done lets leave*/
+  senatorLeavePassportOffice(SSN);
+
+
+} /*End Senator*/
 
 
 
@@ -1892,10 +1967,10 @@ int main() {
     Fork(Customer);
   }
 
-  /*
+  
   for(i = 0; i < SENATORCOUNT; i++){
     Fork(Senator);
-  }*/
+  }
 
 
   for(i = 0; i < CLERKCOUNT; i++){

@@ -438,7 +438,7 @@ public:
 	AddrSpace* space;
 	bool isToBeDeleted;
 };
-#define lockTableSize 100
+#define lockTableSize 200
 BitMap lockTableBitMap(lockTableSize);
 LockTableEntry* lockTable[lockTableSize];
 
@@ -569,7 +569,7 @@ public:
 	bool isToBeDeleted;
 };
 
-#define ConditionTableSize 100
+#define ConditionTableSize 200
 BitMap ConditionTableBitMap(ConditionTableSize);
 ConditionTableEntry* ConditionTable[ConditionTableSize];
 

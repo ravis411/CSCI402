@@ -558,8 +558,6 @@ int customerPassportClerkInteraction(int SSN, int *money, int VIP){
       PrintString(" has gone to PassportClerk ", 
           sizeof(" has gone to PassportClerk ") );
       PrintInt(myLine);
-      PrintString(" to PassportClerk ", sizeof(" to PassportClerk "));
-      PrintInt(myLine);
       PrintString(" too soon. They are going to the back of the line.\n", 
            sizeof(" too soon. They are going to the back of the line.\n"));
   Release(printLock);
@@ -577,6 +575,124 @@ int customerPassportClerkInteraction(int SSN, int *money, int VIP){
 
 
 
+int customerCashierInteraction(int SSN, int *money, int VIP){
+  int myLine = -1;
+  char* myType = MYTYPE(VIP);
+  bool bribe = (*money > 500) && (rand()%2) && !VIP;
+
+  //I should acquire the line lock
+  Acquire(cashierLineLock);
+  //lock acquired
+
+  //Can I go to counter, or have to wait? Should i bribe?
+  //Pick shortest line with clerk not on break
+  //Should i get in the regular line else i should bribe?
+  if(!bribe){ //Get in regular line
+    myLine = pickShortestLine(cashierLineCount, cashierState);
+  }else{ //get in bribe line
+    myLine = pickShortestLine(cashierBribeLineCount, cashierState);
+  }
+  
+  //I must wait in line
+  if(cashierState[myLine] != AVAILABLE){
+    if(!bribe){
+      cashierLineCount[myLine]++;
+      Acquire(printLock);
+          PrintString(myType, 8);
+          PrintString(" ", 1);
+          PrintInt(SSN);
+          PrintString(" has gotten in regular line for Cashier ", sizeof(" has gotten in regular line for Cashier ") );
+          PrintInt(myLine);
+          PrintString(".\n", 2);
+      Release(printLock);
+      Wait(cashierLineCV[myLine], cashierLineLock);
+      cashierLineCount[myLine]--;
+      if(cashierState[myLine] != SIGNALEDCUSTOMER){
+        Release(cashierLineLock);
+        if(customerCheckSenator(SSN))
+          return false;
+      }
+    }else{
+      cashierBribeLineCount[myLine]++;
+      Acquire(printLock);
+          PrintString(myType, 8);
+          PrintString(" ", 1);
+          PrintInt(SSN);
+          PrintString(" has gotten in bribe line for Cashier ", sizeof(" has gotten in bribe line for Cashier ") );
+          PrintInt(myLine);
+          PrintString(".\n", 2);
+      Release(printLock);
+      Wait(cashierBribeLineCV[myLine], cashierLineLock);
+      cashierBribeLineCount[myLine]--;
+      if(cashierState[myLine] != SIGNALEDCUSTOMER){
+        Release(cashierLineLock);
+        if(customerCheckSenator(SSN))
+          return false;
+      }
+      *money -= 500;
+      
+    }
+  }
+
+  cashierState[myLine] = BUSY;
+  Release(cashierLineLock);
+
+
+  Acquire(cashierLock[myLine]);
+
+
+  cashierSharedDataSSN[myLine] = SSN;
+   Acquire(printLock);
+      PrintString(myType, 8);
+      PrintString(" ", 1);
+      PrintInt(SSN);
+      PrintString(" has given SSN ", sizeof(" has given SSN ") );
+      PrintInt(SSN);
+      PrintString(" to Cashier ", sizeof(" to Cashier "));
+      PrintInt(myLine);
+      PrintString(".\n", 2);
+  Release(printLock);
+  Signal(cashierCV[myLine], cashierLock[myLine]);
+
+  Wait(cashierCV[myLine], cashierLock[myLine]);
+
+  if (cashierRejection[SSN] == 1) {
+    Acquire(printLock);
+      PrintString(myType, 8);
+      PrintString(" ", 1);
+      PrintInt(SSN);
+      PrintString(" has gone to Cashier ", 
+          sizeof(" has gone to Cashier ") );
+      PrintInt(myLine);
+      PrintString(" too soon. They are going to the back of the line.\n", 
+           sizeof(" too soon. They are going to the back of the line.\n"));
+    Release(printLock);
+    Release(cashierLock[myLine]);
+    return false;
+  }
+  else {
+    *money -= 100;
+    Acquire(printLock);
+      PrintString(myType, 8);
+      PrintString(" ", 1);
+      PrintInt(SSN);
+      PrintString(" has given Cashier ", 
+          sizeof(" has given Cashier ") );
+      PrintInt(myLine);
+      PrintString(" $100.\n", sizeof(" $100.\n"));
+    Release(printLock);
+    Signal(cashierCV[myLine], cashierLock[myLine]);
+
+    Wait(cashierCV[myLine], cashierLock[myLine]);
+  }
+
+  Release(cashierLock[myLine]);
+
+  return true;
+
+
+
+}/*End of customerCashierInteraction*/
 
 
 
@@ -629,11 +745,11 @@ void Customer(){
     else if(!passportClerkDone){
       passportClerkDone = customerPassportClerkInteraction(SSN, &money, 0);
       if (!passportClerkDone) { for (i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
-    }/*
+    }
     else if(!cashierDone){
       cashierDone = customerCashierInteraction(SSN, money);
-      if (!cashierDone) { for (int i = 0; i < rand() % 901 + 100; i++) { currentThread->Yield(); } }
-    }*/
+      if (!cashierDone) { for (i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
+    }
     else{
       /*This terminates the customer should go at end.*/
       Acquire(printLock);
@@ -1271,7 +1387,181 @@ void PassportClerk(){
 
 
 
+/**********************
+* Cashier
+*************************/
 
+
+void cashiercheckAndGoOnBreak(int myLine){
+  int freeOrAvailable = false;
+  int i;
+  for(i = 0; i < CLERKCOUNT; i++){
+    if(i != myLine && ( cashierState[i] == AVAILABLE || cashierState[i] == BUSY ) ){
+      freeOrAvailable = true;
+      break;
+    }
+  }
+
+  if(freeOrAvailable){
+    cashierState[myLine] = ONBREAK;
+    Acquire(printLock);
+      PrintString("Cashier ", sizeof("Cashier ") );
+      PrintInt(myLine);
+      PrintString(" is going on break.\n", sizeof(" is going on break.\n") );
+    Release(printLock);
+    Wait(cashierBreakCV, cashierLineLock);
+    cashierState[myLine] = BUSY;
+    Acquire(printLock);
+      PrintString("Cashier ", sizeof("Cashier ") );
+      PrintInt(myLine);
+      PrintString(" is coming off break.\n", sizeof(" is coming off break.\n") );
+    Release(printLock);
+  }else{
+
+    Release(cashierLineLock);
+
+    Acquire(managerLock);
+    if(checkedOutCount == (CUSTOMERCOUNT + SENATORCOUNT)){Release(managerLock); Exit(0);}
+    Release(managerLock);
+    Yield();
+    Acquire(cashierLineLock);
+  }
+
+}
+
+int CashierGetMyLine(){
+  int myLine;
+  Acquire(CashierMyLineLock);
+  myLine = CashierMyLine++;
+  Release(CashierMyLineLock);
+  return myLine;
+}
+
+void Cashier(){
+  int myLine;
+  int money = 0;
+  int customerFromLine;/*0 no line, 1 bribe line, 2 regular line*/
+  int customerSSN;
+  
+  myLine = CashierGetMyLine();
+
+  while (true){
+
+    if(clerkCheckForSenator()) continue;
+
+    Acquire(cashierLineLock);
+
+
+    if (cashierBribeLineCount[myLine] > 0){
+      customerFromLine = 1;
+      Signal(cashierBribeLineCV[myLine], cashierLineLock);
+      cashierState[myLine] = SIGNALEDCUSTOMER;
+    }
+    else if (cashierLineCount[myLine] > 0){
+      customerFromLine = 2;
+      Signal(cashierLineCV[myLine], cashierLineLock);
+      cashierState[myLine] = SIGNALEDCUSTOMER;
+    }
+    else{
+      customerFromLine = 0;
+      cashiercheckAndGoOnBreak(myLine);
+      Release(cashierLineLock);
+    }
+
+
+    if (customerFromLine != 0){
+
+      Acquire(printLock);
+          PrintString("Cashier ", sizeof("Cashier ") );
+          PrintInt(myLine);
+          PrintString(" has signalled a Customer to come to their counter.\n",
+               sizeof(" has signalled a Customer to come to their counter.\n") );
+      Release(printLock);
+
+
+      Acquire(cashierLock[myLine]);
+      Release(cashierLineLock);
+
+      Wait(cashierCV[myLine], cashierLock[myLine]);
+
+      customerSSN = cashierSharedDataSSN[myLine];
+
+      if(customerFromLine == 1){
+        money += 500;
+        Acquire(printLock);
+            PrintString("Cashier ", sizeof("Cashier ") );
+            PrintInt(myLine);
+            PrintString(" has received $500 from Customer ", sizeof(" has received $500 from Customer ") );
+            PrintInt(customerSSN);
+            PrintString(".\n", 2);
+        Release(printLock);
+        Yield();//Just to change things up a bit.
+      }
+      
+
+      Acquire(printLock);
+            PrintString("Cashier ", sizeof("Cashier ") );
+            PrintInt(myLine);
+            PrintString(" has received SSN ", sizeof(" has received SSN "));
+            PrintInt(customerSSN);
+            PrintString(" from Customer ", sizeof(" from Customer ") );
+            PrintInt(customerSSN);
+            PrintString(".\n", 2);
+        Release(printLock);
+
+
+      if (passportCompletion[customerSSN] == 0) {
+        
+        Acquire(printLock);
+            PrintString("Cashier ", sizeof("Cashier ") );
+            PrintInt(myLine);
+            PrintString(" has received the $100 from Customer ", sizeof(" has received the $100 from Customer "));
+            PrintInt(customerSSN);
+            PrintString(" before certification. They are to go to the back of my line.\n", 
+                 sizeof(" before certification. They are to go to the back of my line.\n") );
+        Release(printLock);
+        cashierRejection[customerSSN] = 1;
+      }
+      else {
+        cashierRejection[customerSSN] = 0;
+         Acquire(printLock);
+            PrintString("Cashier ", sizeof("Cashier ") );
+            PrintInt(myLine);
+            PrintString(" has verified that Customer ", sizeof(" has verified that Customer "));
+            PrintInt(customerSSN);
+            PrintString(" has been certified by a PassportClerk.\n", 
+                 sizeof(" has been certified by a PassportClerk.\n") );
+        Release(printLock);
+
+        Signal(cashierCV[myLine], cashierLock[myLine]);
+        Wait(cashierCV[myLine], cashierLock[myLine]);
+       
+        Acquire(printLock);
+            PrintString("Cashier ", sizeof("Cashier ") );
+            PrintInt(myLine);
+            PrintString(" has received the $100 from Customer ", sizeof(" has received the $100 from Customer "));
+            PrintInt(customerSSN);
+            PrintString(" after certification.\n", sizeof(" after certification.\n") );
+        Release(printLock);
+
+        doneCompletely[customerSSN] = 1;
+        Acquire(printLock);
+            PrintString("Cashier ", sizeof("Cashier ") );
+            PrintInt(myLine);
+            PrintString(" has provided Customer ", sizeof(" has provided Customer "));
+            PrintInt(customerSSN);
+            PrintString(" their completed passport.\n", sizeof(" their completed passport.\n") );
+        Release(printLock);
+        Signal(cashierCV[myLine], cashierLock[myLine]);
+    
+      }
+      Release(cashierLock[myLine]);
+    }
+
+  }
+
+
+}/*End Cashier*/
 
 
 
@@ -1616,8 +1906,8 @@ int main() {
   for(i = 0; i < CLERKCOUNT; i++){
     Fork(ApplicationClerk);
     Fork(PictureClerk);
-    Fork(PassportClerk);/*
-    Fork(Cashier);*/
+    Fork(PassportClerk);
+    Fork(Cashier);
   }
 
   Fork(Manager);

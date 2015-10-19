@@ -813,7 +813,7 @@ void Senator(){
   int pictureClerkDone = false;
   int passportClerkDone = false;
   int cashierDone = false; 
-  int appClerkFirst = rand() % 2;
+  int appClerkFirst = Rand() % 2;
 
 
 
@@ -835,7 +835,7 @@ void Senator(){
       if (!passportClerkDone) { for (i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
     }
     else if(!cashierDone){
-      cashierDone = customerCashierInteraction(SSN, money, 1);
+      cashierDone = customerCashierInteraction(SSN, &money, 1);
       if (!cashierDone) { for (i = 0; i < Rand() % 901 + 100; i++) { Yield(); } }
     }
   }

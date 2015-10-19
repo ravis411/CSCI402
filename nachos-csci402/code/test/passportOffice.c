@@ -6,7 +6,7 @@
 
 #define CLERKCOUNT  2
 #define CUSTOMERCOUNT 3
-#define SENATORCOUNT  2
+#define SENATORCOUNT  0
 
 #define MAXCLERKS 5
 #define MAXCUSTOMERS 50
@@ -1968,10 +1968,10 @@ int main() {
     Fork(Customer);
   }
 
-  /*
+  
   for(i = 0; i < SENATORCOUNT; i++){
     Fork(Senator);
-  }*/
+  }
 
 
   for(i = 0; i < CLERKCOUNT; i++){

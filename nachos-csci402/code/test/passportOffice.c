@@ -804,6 +804,7 @@ void senatorLeavePassportOffice(int SSN){
       PrintInt(SSN);
       PrintString(" is leaving the Passport Office.\n", sizeof(" is leaving the Passport Office.\n") );
   Release(printLock);
+  Exit(0);
 }
 void Senator(){
   int SSN;

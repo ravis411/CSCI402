@@ -1968,10 +1968,10 @@ int main() {
     Fork(Customer);
   }
 
-  
+  /*
   for(i = 0; i < SENATORCOUNT; i++){
     Fork(Senator);
-  }
+  }*/
 
 
   for(i = 0; i < CLERKCOUNT; i++){

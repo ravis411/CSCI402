@@ -191,12 +191,12 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 										// a separate page, we could set its 
 										// pages to be read-only
 		//populating ipt
-		system->ipt[i].virtualPage = i;
-		system->ipt[i].physicalPage = ppn;
-		system->ipt[i].valid = TRUE;
-		system->ipt[i].use = FALSE;
-		system->ipt[i].dirty = FALSE;
-		system->ipt[i].readOnly = FALSE;
+		ipt[i].virtualPage = i;
+		ipt[i].physicalPage = ppn;
+		ipt[i].valid = TRUE;
+		ipt[i].use = FALSE;
+		ipt[i].dirty = FALSE;
+		ipt[i].readOnly = FALSE;
 
 
         if(i < numNonStackPages){//Not stack

@@ -20,7 +20,7 @@ Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 #ifdef USER_PROGRAM
 BitMap *pageTableBitMap;    //Bitmap to track unused pages
-//std::map<AddrSpace*, ProcessTableEntry*> processTable;
+//std::map<AddrSpace*,ableEntry*> processTable;
 
 
 ProcessTableEntry::ProcessTableEntry(AddrSpace* spc){
@@ -82,6 +82,8 @@ bool ProcessTableClass::deleteProcess(AddrSpace* spc){
 }
 
 ProcessTableClass* ProcessTable;
+IPTEntry* ipt;
+
 #endif
 
 #ifdef FILESYS_NEEDED

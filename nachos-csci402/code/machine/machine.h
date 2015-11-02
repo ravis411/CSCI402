@@ -180,6 +180,8 @@ class Machine {
 
     TranslationEntry *tlb;		// this pointer should be considered 
 					// "read-only" to Nachos kernel code
+	int currentTLB;
+
     TranslationEntry *pageTable;
     unsigned int pageTableSize;
 
@@ -192,6 +194,8 @@ class Machine {
 				// time reaches this value
     int64_t lastUsed[NumPhysPages]; //This is the time stamp of when the page was last used.
 };
+
+
 
 extern void ExceptionHandler(ExceptionType which);
 				// Entry point into Nachos for handling

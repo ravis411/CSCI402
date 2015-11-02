@@ -712,10 +712,11 @@ int Rand_Syscall(){
 
 
 
-
+int currentTLB = 0;
 void ExceptionHandler(ExceptionType which) {
 		int type = machine->ReadRegister(2); // Which syscall?
 		int rv=0; 	// the return value from a syscall
+
 
 		if ( which == SyscallException ) {
 	switch (type) {
@@ -828,6 +829,16 @@ void ExceptionHandler(ExceptionType which) {
 		case SC_Rand:
 			DEBUG('a', "Rand syscall.\n");
 			rv = Rand_Syscall();
+		break;
+
+		case PageFaultException:
+			//Do TLB population here
+			int vpn = BadVAddrReg / machine->PageSize;
+			machine->tlb[currentTLB].virtualPage = machine->pageTable[vpn].virtualPage;
+			machine->tlb[currentTLB].physicalPage = machine->pageTable[vpn].physicalPage;
+
+			currentTLB = (currentTLB + 1)%machine->TLBSize;
+			
 		break;
 
 	}

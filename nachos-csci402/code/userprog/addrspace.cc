@@ -452,6 +452,14 @@ void AddrSpace::SaveState()
 
 void AddrSpace::RestoreState() 
 {
-    machine->pageTable = pageTable;
+    //machine->pageTable = pageTable;
     machine->pageTableSize = numPages;
+	
+	//Invalidate TLB
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+	for (int i = 0; i < TLBSize; i++)
+		machine->tlb[i].valid = FALSE;
+	(void)interrupt->SetLevel(oldLevel);   // re-enable interrupts
+
+
 }

@@ -710,8 +710,6 @@ int Rand_Syscall(){
 
 
 
-
-
 int currentTLB = 0;
 void ExceptionHandler(ExceptionType which) {
 		int type = machine->ReadRegister(2); // Which syscall?
@@ -834,8 +832,13 @@ void ExceptionHandler(ExceptionType which) {
 		case PageFaultException:
 			//Do TLB population here
 			int vpn = BadVAddrReg / machine->PageSize;
+
 			machine->tlb[currentTLB].virtualPage = machine->pageTable[vpn].virtualPage;
 			machine->tlb[currentTLB].physicalPage = machine->pageTable[vpn].physicalPage;
+			machine->tlb[currentTLB].valid = machine->pageTable[vpn].valid;
+			machine->tlb[currentTLB].readOnly = machine->pageTable[vpn].readOnly;
+			machine->tlb[currentTLB].use = machine->pageTable[vpn].use;
+			machine->tlb[currentTLB].dirty = machine->pageTable[vpn].dirty;
 
 			currentTLB = (currentTLB + 1)%machine->TLBSize;
 			

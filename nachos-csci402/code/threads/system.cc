@@ -212,6 +212,7 @@ Initialize(int argc, char **argv)
     //Initialize the pageTableBitMap
     pageTableBitMap = new BitMap(NumPhysPages);
     ProcessTable = new ProcessTableClass;
+	ipt = new IPTEntry[NumPhysPages];
 #endif
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C

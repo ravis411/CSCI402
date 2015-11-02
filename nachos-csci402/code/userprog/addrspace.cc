@@ -188,8 +188,17 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     	pageTable[i].use = FALSE;
     	pageTable[i].dirty = FALSE;
     	pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
-					// a separate page, we could set its 
-					// pages to be read-only
+										// a separate page, we could set its 
+										// pages to be read-only
+		//populating ipt
+		system->ipt[i].virtualPage = i;
+		system->ipt[i].physicalPage = ppn;
+		system->ipt[i].valid = TRUE;
+		system->ipt[i].use = FALSE;
+		system->ipt[i].dirty = FALSE;
+		system->ipt[i].readOnly = FALSE;
+
+
         if(i < numNonStackPages){//Not stack
             executable->ReadAt( &(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + (i * PageSize) );
             #ifdef PAGETABLEMEMBERS

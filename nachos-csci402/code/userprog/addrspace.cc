@@ -303,11 +303,23 @@ AddrSpace::Fork(int nextInstruction)
 
     //copy old table
     PageTableEntry* newPageTable = new PageTableEntry[newNumPages];
+	IPTEntry* newIPT = new IPTEntry[newNumPages];
     for(unsigned int i = 0; i < numPages; i++){
         (newPageTable[i]) = (pageTable[i]); //Overloaded = operator now does a deep copy
+
+		newIPT[i].virtualPage = pageTable[i].virtualPage;
+		newIPT[i].physicalPage = pageTable[i].physicalPage;
+		newIPT[i].valid = pageTable[i].valid;
+		newIPT[i].use = pageTable[i].use;
+		newIPT[i].dirty = pageTable[i].dirty;
+		newIPT[i].readOnly = pageTable[i].readOnly;
+		newIPT[i].owner = thread->space;
+
     }
     delete pageTable;
-    pageTable = newPageTable;
+	pageTable = newPageTable;
+	delete ipt;
+	ipt = newIPT;
 
     #ifdef THREADTABLE
             ThreadTableEntry* t = new ThreadTableEntry();
@@ -324,6 +336,16 @@ AddrSpace::Fork(int nextInstruction)
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;
+
+		ipt[i].virtualPage = i;
+		ipt[i].physicalPage = FindPPN();
+		ipt[i].valid = TRUE;
+		ipt[i].use = FALSE;
+		ipt[i].dirty = FALSE;
+		ipt[i].readOnly = FALSE;
+		ipt[i].owner = thread->space;
+
+
         #ifdef PAGETABLEMEMBERS
         pageTable[i].currentThreadID = currentThread->getThreadID();
         pageTable[i].stackPage = TRUE;
@@ -373,8 +395,10 @@ void AddrSpace::Exit(){
             int vpn = threadTable[currentThread->getThreadID()]->stackPages[i];
             DEBUG('E', "Clearing stack page, vpn: %i, for threadID: %i\n", vpn, currentThread->getThreadID());
             pageTable[vpn].valid = FALSE;
+			ipt[vpn].valid = FALSE;
             pageTableBitMap->Clear(pageTable[vpn].physicalPage);
             pageTable[vpn].physicalPage = -1;
+			ipt[vpn].physicalPage = -1;
             stackPagesCleared++;
         }
         
@@ -385,8 +409,10 @@ void AddrSpace::Exit(){
     for(unsigned int i = numNonStackPages; i < numPages; i++){
         if(pageTable[i].stackPage == TRUE && pageTable[i].currentThreadID == currentThreadID){
             pageTable[i].valid = FALSE;
+			ipt[vpn].valid = FALSE;
             pageTableBitMap->Clear(pageTable[i].physicalPage);
             pageTable[i].physicalPage = -1;
+			ipt[vpn].physicalPage = -1;
             stackPagesCleared++;
         }
         if(stackPagesCleared == (UserStackSize * PageSize)){

@@ -847,6 +847,7 @@ void ExceptionHandler(ExceptionType which) {
 			machine->tlb[machine->currentTLB].readOnly = machine->pageTable[vpn].readOnly;
 			machine->tlb[machine->currentTLB].use = machine->pageTable[vpn].use;
 			machine->tlb[machine->currentTLB].dirty = machine->pageTable[vpn].dirty;
+			machine->tlb[machine->currentTLB].owner = thread->space;
 
 			machine->currentTLB = (machine->currentTLB + 1) % TLBSize;
 

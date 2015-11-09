@@ -100,6 +100,23 @@ PageTableEntry &PageTableEntry::operator=(const PageTableEntry& entry){
     return *this;
 }
 
+/////////////////////////////////////////////////////////////////
+//  ITPEntry
+//////////////////////////////////////////////////////////////////
+IPTEntry &IPTEntry::operator=(const IPTEntry& entry){
+	DEBUG('f', "IPTEntry assignment opperator.\n");
+	if (&entry != this) // check for self assignment
+	{
+		virtualPage = entry.virtualPage;
+		physicalPage = entry.physicalPage;
+		valid = entry.valid;
+		use = entry.use;
+		dirty = entry.dirty;
+		readOnly = entry.readOnly;
+		owner = entry.owner;
+	}
+	return *this;
+}
 
 
 //----------------------------------------------------------------------
@@ -191,12 +208,12 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 										// a separate page, we could set its 
 										// pages to be read-only
 		//populating ipt
-		ipt[i].virtualPage = i;
-		ipt[i].physicalPage = ppn;
-		ipt[i].valid = TRUE;
-		ipt[i].use = FALSE;
-		ipt[i].dirty = FALSE;
-		ipt[i].readOnly = FALSE;
+		ipt[i]->virtualPage = i;
+		ipt[i]->physicalPage = ppn;
+		ipt[i]->valid = TRUE;
+		ipt[i]->use = FALSE;
+		ipt[i]->dirty = FALSE;
+		ipt[i]->readOnly = FALSE;
 
 
         if(i < numNonStackPages){//Not stack
@@ -257,7 +274,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 AddrSpace::~AddrSpace()
 {
     //Clear used pages
-    for(int i = 0; i < numPages; i++){
+    for(unsigned int i = 0; i < numPages; i++){
         if(pageTable[i].valid){
             DEBUG('E', "~Addrspace: Clearing pageTableBitMap: %i\n", pageTable[i].physicalPage);
             pageTableBitMap->Clear(pageTable[i].physicalPage);
@@ -303,23 +320,16 @@ AddrSpace::Fork(int nextInstruction)
 
     //copy old table
     PageTableEntry* newPageTable = new PageTableEntry[newNumPages];
-	IPTEntry* newIPT = new IPTEntry[newNumPages];
+	IPTEntry* newIPT [newNumPages];
     for(unsigned int i = 0; i < numPages; i++){
         (newPageTable[i]) = (pageTable[i]); //Overloaded = operator now does a deep copy
-
-		newIPT[i].virtualPage = pageTable[i].virtualPage;
-		newIPT[i].physicalPage = pageTable[i].physicalPage;
-		newIPT[i].valid = pageTable[i].valid;
-		newIPT[i].use = pageTable[i].use;
-		newIPT[i].dirty = pageTable[i].dirty;
-		newIPT[i].readOnly = pageTable[i].readOnly;
-		newIPT[i].owner = thread->space;
+		(newIPT[i]) = (ipt[i]); //This a deep copy too? I think?
 
     }
     delete pageTable;
 	pageTable = newPageTable;
 	delete ipt;
-	ipt = newIPT;
+	(ipt) = (newIPT);
 
     #ifdef THREADTABLE
             ThreadTableEntry* t = new ThreadTableEntry();
@@ -337,13 +347,13 @@ AddrSpace::Fork(int nextInstruction)
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;
 
-		ipt[i].virtualPage = i;
-		ipt[i].physicalPage = FindPPN();
-		ipt[i].valid = TRUE;
-		ipt[i].use = FALSE;
-		ipt[i].dirty = FALSE;
-		ipt[i].readOnly = FALSE;
-		ipt[i].owner = thread->space;
+		ipt[i]->virtualPage = i;
+		ipt[i]->physicalPage = FindPPN();
+		ipt[i]->valid = TRUE;
+		ipt[i]->use = FALSE;
+		ipt[i]->dirty = FALSE;
+		ipt[i]->readOnly = FALSE;
+		ipt[i]->owner = currentThread->space;
 
 
         #ifdef PAGETABLEMEMBERS
@@ -395,10 +405,10 @@ void AddrSpace::Exit(){
             int vpn = threadTable[currentThread->getThreadID()]->stackPages[i];
             DEBUG('E', "Clearing stack page, vpn: %i, for threadID: %i\n", vpn, currentThread->getThreadID());
             pageTable[vpn].valid = FALSE;
-			ipt[vpn].valid = FALSE;
+			ipt[vpn]->valid = FALSE;
             pageTableBitMap->Clear(pageTable[vpn].physicalPage);
             pageTable[vpn].physicalPage = -1;
-			ipt[vpn].physicalPage = -1;
+			ipt[vpn]->physicalPage = -1;
             stackPagesCleared++;
         }
         

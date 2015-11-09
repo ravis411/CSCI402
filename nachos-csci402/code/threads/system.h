@@ -85,7 +85,7 @@ public:
 };
 
 
-extern IPTEntry* ipt;
+extern IPTEntry* ipt[NumPhysPages];
 
 //extern std::map<AddrSpace*, ProcessTableEntry*> processTable;	//The ProcessTable
 

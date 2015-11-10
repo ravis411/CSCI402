@@ -841,13 +841,13 @@ void ExceptionHandler(ExceptionType which) {
 			//Do TLB population here
 			int vpn = BadVAddrReg/PageSize;
 
-			machine->tlb[machine->currentTLB].virtualPage = system->ipt[vpn].virtualPage;
-			machine->tlb[machine->currentTLB].physicalPage = system->ipt[vpn].physicalPage;
-			machine->tlb[machine->currentTLB].valid = system->ipt[vpn].valid;
-			machine->tlb[machine->currentTLB].readOnly = system->ipt[vpn].readOnly;
-			machine->tlb[machine->currentTLB].use = system->ipt[vpn].use;
-			machine->tlb[machine->currentTLB].dirty = system->ipt[vpn].dirty;
-			machine->tlb[machine->currentTLB].owner = system->ipt[vpn].owner;
+			machine->tlb[machine->currentTLB].virtualPage = ipt->entries[vpn].virtualPage;
+			machine->tlb[machine->currentTLB].physicalPage = ipt->entries[vpn].physicalPage;
+			machine->tlb[machine->currentTLB].valid = ipt->entries[vpn].valid;
+			machine->tlb[machine->currentTLB].readOnly = ipt->entries[vpn].readOnly;
+			machine->tlb[machine->currentTLB].use = ipt->entries[vpn].use;
+			machine->tlb[machine->currentTLB].dirty = ipt->entries[vpn].dirty;
+
 
 			machine->currentTLB = (machine->currentTLB + 1) % TLBSize;
 

@@ -82,7 +82,42 @@ bool ProcessTableClass::deleteProcess(AddrSpace* spc){
 }
 
 ProcessTableClass* ProcessTable;
-IPTEntry* ipt [NumPhysPages];
+
+IPTEntry &IPTEntry::operator=(const IPTEntry& entry){
+	DEBUG('f', "IPTEntry assignment opperator.\n");
+	if (&entry != this) // check for self assignment
+	{
+		virtualPage = entry.virtualPage;
+		physicalPage = entry.physicalPage;
+		valid = entry.valid;
+		use = entry.use;
+		dirty = entry.dirty;
+		readOnly = entry.readOnly;
+		owner = entry.owner;
+	}
+	return *this;
+}
+
+IPTClass::IPTClass(int numPages) {
+	entries = new IPTEntry[numPages];
+}
+IPTClass::IPTClass() {
+	entries = new IPTEntry[NumPhysPages];
+}
+
+IPTClass &IPTClass::operator=(const IPTClass& otherIPT){
+	DEBUG('f', "IPTClass assignment opperator.\n");
+	IPTEntry ent;
+	int i = 0;
+	do {
+		ent = (this->entries[i]) = (ipt->entries[i]);
+		i++;
+	} while ((ent.virtualPage != NULL) && (ent.physicalPage != NULL));
+
+	return *this;
+}
+
+IPTClass* ipt;
 
 #endif
 
@@ -214,7 +249,7 @@ Initialize(int argc, char **argv)
     //Initialize the pageTableBitMap
     pageTableBitMap = new BitMap(NumPhysPages);
     ProcessTable = new ProcessTableClass;
-	//ipt = new IPTEntry[NumPhysPages];
+	ipt = new IPTClass;
 #endif
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C

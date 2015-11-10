@@ -840,7 +840,7 @@ void ExceptionHandler(ExceptionType which) {
 
 			//Do TLB population here
 			int vpn = BadVAddrReg/PageSize;
-
+			cout << "pageFaultException. vpn = " << vpn << ". currTLB = " << machine->currentTLB << endl;
 			machine->tlb[machine->currentTLB].virtualPage = ipt->entries[vpn].virtualPage;
 			machine->tlb[machine->currentTLB].physicalPage = ipt->entries[vpn].physicalPage;
 			machine->tlb[machine->currentTLB].valid = ipt->entries[vpn].valid;

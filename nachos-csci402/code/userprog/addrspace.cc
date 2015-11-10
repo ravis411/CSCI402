@@ -194,6 +194,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 										// a separate page, we could set its 
 										// pages to be read-only
 		//populating ipt
+		cout << "populating ipt. VP = " << i << ". PP = " << ppn << endl;
 		ipt->entries[i].virtualPage = i;
 		ipt->entries[i].physicalPage = ppn;
 		ipt->entries[i].valid = TRUE;
@@ -480,16 +481,21 @@ void AddrSpace::SaveState()
 //
 //      For now, tell the machine where to find the page table.
 //----------------------------------------------------------------------
-
+int i;
 void AddrSpace::RestoreState() 
 {
     //machine->pageTable = pageTable;
     machine->pageTableSize = numPages;
-	
+	cout << "RestoreState, must invalidate the TLB. numPages = " << machine->pageTableSize << ". TLB size = " << TLBSize << endl;
 	//Invalidate TLB
+	
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
-	for (int i = 0; i < TLBSize; i++)
+	for (i = 0; i < TLBSize; i++) {
+		cout << "here " << i << endl;
 		machine->tlb[i].valid = FALSE;
+	}
+
+	cout << "done with invalidation" << endl;
 	(void)interrupt->SetLevel(oldLevel);   // re-enable interrupts
 
 

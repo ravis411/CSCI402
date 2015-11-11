@@ -55,6 +55,7 @@ void CheckEndian()
 
 Machine::Machine(bool debug)
 {
+
     int i;
 
     for (i = 0; i < NumTotalRegs; i++)
@@ -71,8 +72,9 @@ Machine::Machine(bool debug)
 
 #ifdef USE_TLB
     tlb = new TranslationEntry[TLBSize];
-    for (i = 0; i < TLBSize; i++)
-	tlb[i].valid = FALSE;
+	for (i = 0; i < TLBSize; i++) {
+		tlb[i].valid = FALSE;
+	}
 	int currentTLB = 0;
     pageTable = NULL;
 #else	// use linear page table

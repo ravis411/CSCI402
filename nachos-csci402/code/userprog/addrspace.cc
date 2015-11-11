@@ -144,10 +144,17 @@ SwapHeader (NoffHeader *noffH)
 //      constructed set to false.
 //----------------------------------------------------------------------
 
-AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
+AddrSpace::AddrSpace(char *filename) : fileTable(MaxOpenFiles) {
     NoffHeader noffH;
     unsigned int i, size;
 
+
+	OpenFile* exe = fileSystem->Open(filename);
+	if (exe == NULL) {
+		printf("Unable to open file %s\n", filename);
+		return;
+	}
+	executable = exe;
     // Don't allocate the input or output to disk files
     fileTable.Put(0);
     fileTable.Put(0);
@@ -184,9 +191,10 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     #endif
     
     for (i = 0; i < numPages; i++) {
-        int ppn = FindPPN();//The PPN of an unused page.
+		int ppn = FindPPN();//The PPN of an unused page.
+		//cout << "found ppn of unused page for pagetable and ipt  " << ppn << endl;
     	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-    	pageTable[i].physicalPage = ppn;
+		pageTable[i].physicalPage = ppn;
     	pageTable[i].valid = TRUE;
     	pageTable[i].use = FALSE;
     	pageTable[i].dirty = FALSE;
@@ -194,7 +202,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 										// a separate page, we could set its 
 										// pages to be read-only
 		//populating ipt
-		cout << "populating ipt. VP = " << i << ". PP = " << ppn << endl;
+		//cout << "populating ipt. VP = " << i << ". PP = " << ppn << "     ";
 		ipt->entries[i].virtualPage = i;
 		ipt->entries[i].physicalPage = ppn;
 		ipt->entries[i].valid = TRUE;
@@ -204,7 +212,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 
 
         if(i < numNonStackPages){//Not stack
-            executable->ReadAt( &(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + (i * PageSize) );
+            //executable->ReadAt( &(machine->mainMemory[PageSize * ppn]), PageSize, noffH.code.inFileAddr + (i * PageSize) );
             #ifdef PAGETABLEMEMBERS
             pageTable[i].stackPage = FALSE;
             #endif
@@ -224,7 +232,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
         pageTable[i].currentThreadID = currentThread->getThreadID();
         #endif
     }
-
+	cout << endl;
     //We need to remember where this thread's stack is...
 
 
@@ -371,7 +379,6 @@ AddrSpace::Fork(int nextInstruction)
 //  Removes the stack for the current thread.
 ////////////////////////////////////////////////////////////////////
 void AddrSpace::Exit(){
-   
     unsigned int stackPagesCleared = 0;
     int currentThreadID = currentThread->getThreadID();
     DEBUG('E', "In AddrSpace::Exit for thread %i\n", currentThreadID);
@@ -486,16 +493,22 @@ void AddrSpace::RestoreState()
 {
     //machine->pageTable = pageTable;
     machine->pageTableSize = numPages;
-	cout << "RestoreState, must invalidate the TLB. numPages = " << machine->pageTableSize << ". TLB size = " << TLBSize << endl;
+	
 	//Invalidate TLB
 	
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
 	for (i = 0; i < TLBSize; i++) {
-		cout << "here " << i << endl;
+		//Propogate the dirty bit.
+		if (machine->tlb[i].dirty == TRUE) {
+			int vpn = (machine->tlb[i].virtualPage) / PageSize;
+			ipt->entries[vpn].dirty == TRUE;
+			machine->pageTable[vpn].dirty == TRUE;
+		}
+
 		machine->tlb[i].valid = FALSE;
 	}
 
-	cout << "done with invalidation" << endl;
+
 	(void)interrupt->SetLevel(oldLevel);   // re-enable interrupts
 
 

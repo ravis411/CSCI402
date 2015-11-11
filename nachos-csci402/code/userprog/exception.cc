@@ -285,21 +285,16 @@ int execCalled = 0;
 void kernel_exec(int intName){
 	char* name = (char*)intName;
 	DEBUG('e', "Kernel_exec system call: FileName: %s \n\n", name);
+	
 
-	OpenFile *executable = fileSystem->Open(name);
 	AddrSpace *space;
 
-	if (executable == NULL) {
-		printf("Unable to open file %s\n", name);
-		return;
-	}
-	 
-		space = new AddrSpace(executable);
+
+	space = new AddrSpace(name);
 
 		currentThread->space = space;
 		//processTable.insert(space, (new ProcessTableEntry(space)));
 		ProcessTable->addProcess(space);
-		delete executable;      // close file
 
 		space->InitRegisters();   // set the initial register values
 		space->RestoreState();    // load page table register
@@ -839,22 +834,50 @@ void ExceptionHandler(ExceptionType which) {
 		} else if (which == PageFaultException) {
 
 			//Do TLB population here
-			int vpn = BadVAddrReg/PageSize;
-			cout << "pageFaultException. vpn = " << vpn << ". currTLB = " << machine->currentTLB << endl;
-			machine->tlb[machine->currentTLB].virtualPage = ipt->entries[vpn].virtualPage;
-			machine->tlb[machine->currentTLB].physicalPage = ipt->entries[vpn].physicalPage;
-			machine->tlb[machine->currentTLB].valid = ipt->entries[vpn].valid;
-			machine->tlb[machine->currentTLB].readOnly = ipt->entries[vpn].readOnly;
-			machine->tlb[machine->currentTLB].use = ipt->entries[vpn].use;
-			machine->tlb[machine->currentTLB].dirty = ipt->entries[vpn].dirty;
+			int vpn = (int)(machine->registers[BadVAddrReg]/PageSize);
+			cout << "pageFaultException. vpn = " << vpn << endl;
+			cout << "registers[BadVAddrReg] = " << machine->registers[BadVAddrReg] << " PageSize = " << PageSize << endl;
 
+			if (currentThread->space->pageTable == NULL) {
+				cout << "currentThread " << currentThread << endl;
+				cout << "current space" << currentThread->space << endl;
+
+				cout << "pagetable is null" << currentThread->space->pageTable << endl;
+			}
+
+			cout << "from pagetable:  vnp = " << currentThread->space->pageTable[vpn].virtualPage << "  ppn = " << currentThread->space->pageTable[vpn].physicalPage << endl;
+			cout << "    valid " << currentThread->space->pageTable[vpn].valid << "  dirty  " << currentThread->space->pageTable[vpn].dirty << endl;
+
+			machine->tlb[machine->currentTLB].virtualPage = currentThread->space->pageTable[vpn].virtualPage;
+			machine->tlb[machine->currentTLB].physicalPage = currentThread->space->pageTable[vpn].physicalPage;
+			machine->tlb[machine->currentTLB].valid = currentThread->space->pageTable[vpn].valid;
+			machine->tlb[machine->currentTLB].readOnly = currentThread->space->pageTable[vpn].readOnly;
+			machine->tlb[machine->currentTLB].use = currentThread->space->pageTable[vpn].use;
+			machine->tlb[machine->currentTLB].dirty = currentThread->space->pageTable[vpn].dirty;
 
 			machine->currentTLB = (machine->currentTLB + 1) % TLBSize;
 
+
+			cout << "from ipt:  vnp = " << ipt->entries[vpn].virtualPage << "  ppn = " << ipt->entries[vpn].physicalPage << endl;
+			cout << "    valid " << ipt->entries[vpn].valid << "  dirty  " << ipt->entries[vpn].dirty << endl;
+
+			//machine->tlb[machine->currentTLB].virtualPage = ipt->entries[vpn].virtualPage;
+			//machine->tlb[machine->currentTLB].physicalPage = ipt->entries[vpn].physicalPage;
+			//machine->tlb[machine->currentTLB].valid = ipt->entries[vpn].valid;
+			//machine->tlb[machine->currentTLB].readOnly = ipt->entries[vpn].readOnly;
+			//machine->tlb[machine->currentTLB].use = ipt->entries[vpn].use;
+			//machine->tlb[machine->currentTLB].dirty = ipt->entries[vpn].dirty;
+
+			//machine->currentTLB = (machine->currentTLB + 1) % TLBSize;
+
+			while (!currentThread->space->pageTable[vpn].valid) {
+
+			}
 
 
 		} else {
 			cout<<"Unexpected user mode exception - which:"<<which<<"  type:"<< type<<endl;
 			interrupt->Halt();
 		}
+
 }

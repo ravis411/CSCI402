@@ -49,9 +49,10 @@ class ThreadTableEntry{
 
 class AddrSpace {
   public:
-    AddrSpace(OpenFile *executable);	// Create an address space,
+	  AddrSpace(char *filename);	// Create an address space,
 					// initializing it with the program
 					// stored in the file "executable"
+	  OpenFile *executable;
     ~AddrSpace();			// De-allocate an address space
 
     void InitRegisters();		// Initialize user-level CPU registers,
@@ -64,9 +65,11 @@ class AddrSpace {
     void Fork(int nextInstruction);//Can be called to add a stack
     void Exit();//Deletes 8 pages of stack for current thread.
 
- private:
-    PageTableEntry *pageTable;	// Assume linear page table translation
-    #ifdef THREADTABLE
+
+	PageTableEntry *pageTable;	// Assume linear page table translation
+    
+private:
+	#ifdef THREADTABLE
     //vector<ThreadTableEntry*> threadTable;
     map<int, ThreadTableEntry*> threadTable;
     #endif
@@ -75,6 +78,8 @@ class AddrSpace {
     unsigned int numNonStackPages;
 					// address space
     int FindPPN();  //Returns a ppn if found otherwise prints a message and halts nachos
+
+
 };
 
 #endif // ADDRSPACE_H

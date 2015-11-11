@@ -27,6 +27,11 @@
 
 class PageTableEntry: public TranslationEntry{
     public:
+
+	int	byteOffset;   //location of a virtual page in the executable/swapfile 
+					  //The value for this field in in the third argument of your executable->ReadAt statement in the AddrSpace constructor.
+	int diskLocation; // (1)swap, (2)executable, or (-1)neither.
+
     #ifdef PAGETABLEMEMBERS
     bool stackPage; //True if this is a stack page...Should be deleted when this thread is removed..?
     int currentThreadID;    //The currentThreadID

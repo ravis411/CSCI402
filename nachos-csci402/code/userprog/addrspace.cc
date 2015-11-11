@@ -86,6 +86,8 @@ PageTableEntry &PageTableEntry::operator=(const PageTableEntry& entry){
     DEBUG('f', "PageTableEntry assignment opperator.\n");
     if(&entry != this) // check for self assignment
     {
+		byteOffset = entry.byteOffset;
+		diskLocation = entry.diskLocation;
         virtualPage = entry.virtualPage;
         physicalPage = entry.physicalPage;
         valid = entry.valid;
@@ -191,11 +193,13 @@ AddrSpace::AddrSpace(char *filename) : fileTable(MaxOpenFiles) {
     #endif
     
     for (i = 0; i < numPages; i++) {
-		int ppn = FindPPN();//The PPN of an unused page.
+		int ppn = -1; //FindPPN();//The PPN of an unused page.
 		//cout << "found ppn of unused page for pagetable and ipt  " << ppn << endl;
     	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
 		pageTable[i].physicalPage = ppn;
-    	pageTable[i].valid = TRUE;
+		pageTable[i].byteOffset = 0;
+		pageTable[i].diskLocation = 2;
+    	pageTable[i].valid = FALSE;
     	pageTable[i].use = FALSE;
     	pageTable[i].dirty = FALSE;
     	pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
@@ -205,7 +209,7 @@ AddrSpace::AddrSpace(char *filename) : fileTable(MaxOpenFiles) {
 		//cout << "populating ipt. VP = " << i << ". PP = " << ppn << "     ";
 		ipt->entries[i].virtualPage = i;
 		ipt->entries[i].physicalPage = ppn;
-		ipt->entries[i].valid = TRUE;
+		ipt->entries[i].valid = FALSE;
 		ipt->entries[i].use = FALSE;
 		ipt->entries[i].dirty = FALSE;
 		ipt->entries[i].readOnly = FALSE;
@@ -336,15 +340,17 @@ AddrSpace::Fork(int nextInstruction)
     //Add 8 pages for stack
     for(unsigned int i = numPages; i < newNumPages; i++){
         pageTable[i].virtualPage = i;
-        pageTable[i].physicalPage = FindPPN();
-        pageTable[i].valid = TRUE;
+		pageTable[i].physicalPage = -1; // FindPPN();
+		pageTable[i].byteOffset = 0;
+		pageTable[i].diskLocation = -1;
+        pageTable[i].valid = FALSE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;
 
 		ipt->entries[i].virtualPage = i;
-		ipt->entries[i].physicalPage = FindPPN();
-		ipt->entries[i].valid = TRUE;
+		ipt->entries[i].physicalPage = -1; // FindPPN();
+		ipt->entries[i].valid = FALSE;
 		ipt->entries[i].use = FALSE;
 		ipt->entries[i].dirty = FALSE;
 		ipt->entries[i].readOnly = FALSE;

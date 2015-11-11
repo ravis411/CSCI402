@@ -85,6 +85,8 @@ public:
 
 extern IPTClass* ipt;
 
+
+
 //extern std::map<AddrSpace*, ProcessTableEntry*> processTable;	//The ProcessTable
 
 #include "machine.h"

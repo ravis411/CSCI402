@@ -703,6 +703,66 @@ int Rand_Syscall(){
 
 
 
+int handleMemoryFull() {
+	int ppn = -1;
+
+	return ppn;
+}
+
+
+
+int handleIPTMiss(int vpn) {
+	int ppn = -1;
+	//Allocate 1 pg memory and read page from exe into this page
+	ppn = system->pageTableBitMap->Find();
+
+	if (ppn == -1) {
+		ppn = handleMemoryFull();
+	}
+	//Update IPT, PageTable, and TLB
+
+
+	return ppn;
+}
+
+
+
+void handlePageFault(int vpn) {
+	//Searching the IPT
+	int ppn = -1;
+	bool inIPT = false;
+
+	cout << "from ipt:  vnp = " << ipt->entries[vpn].virtualPage << "  ppn = " << ipt->entries[vpn].physicalPage << "    valid " << ipt->entries[vpn].valid << "  dirty  " << ipt->entries[vpn].dirty << endl;
+	for (int i = 0; i < NumPhysPages; i++) {
+		if (ipt->entries[vpn].valid && ipt->entries[vpn].virtualPage == vpn &&  ipt->entries[vpn].owner == currentThread->space) {
+			ppn = i;
+			inIPT = true;
+			break;
+		}
+	}
+	if (ppn = -1) {
+		//Handle IPT miss
+		ppn = handleIPTMiss(vpn);
+	}
+	//Update TLB
+	if (inIPT) {
+		machine->tlb[machine->currentTLB].virtualPage = ipt->entries[ppn].virtualPage;
+		machine->tlb[machine->currentTLB].physicalPage = ipt->entries[ppn].physicalPage;
+		machine->tlb[machine->currentTLB].valid = ipt->entries[ppn].valid;
+		machine->tlb[machine->currentTLB].readOnly = ipt->entries[ppn].readOnly;
+		machine->tlb[machine->currentTLB].use = ipt->entries[ppn].use;
+		machine->tlb[machine->currentTLB].dirty = ipt->entries[ppn].dirty;
+
+		machine->currentTLB = (machine->currentTLB + 1) % TLBSize;
+	}
+	else {
+
+	}
+
+}
+
+
+
 
 void ExceptionHandler(ExceptionType which) {
 		int type = machine->ReadRegister(2); // Which syscall?
@@ -836,43 +896,24 @@ void ExceptionHandler(ExceptionType which) {
 			//Do TLB population here
 			int vpn = (int)(machine->registers[BadVAddrReg]/PageSize);
 			cout << "pageFaultException. vpn = " << vpn << endl;
-			cout << "registers[BadVAddrReg] = " << machine->registers[BadVAddrReg] << " PageSize = " << PageSize << endl;
 
-			if (currentThread->space->pageTable == NULL) {
-				cout << "currentThread " << currentThread << endl;
-				cout << "current space" << currentThread->space << endl;
-
-				cout << "pagetable is null" << currentThread->space->pageTable << endl;
-			}
-
-			cout << "from pagetable:  vnp = " << currentThread->space->pageTable[vpn].virtualPage << "  ppn = " << currentThread->space->pageTable[vpn].physicalPage << endl;
-			cout << "    valid " << currentThread->space->pageTable[vpn].valid << "  dirty  " << currentThread->space->pageTable[vpn].dirty << endl;
-
-			machine->tlb[machine->currentTLB].virtualPage = currentThread->space->pageTable[vpn].virtualPage;
-			machine->tlb[machine->currentTLB].physicalPage = currentThread->space->pageTable[vpn].physicalPage;
-			machine->tlb[machine->currentTLB].valid = currentThread->space->pageTable[vpn].valid;
-			machine->tlb[machine->currentTLB].readOnly = currentThread->space->pageTable[vpn].readOnly;
-			machine->tlb[machine->currentTLB].use = currentThread->space->pageTable[vpn].use;
-			machine->tlb[machine->currentTLB].dirty = currentThread->space->pageTable[vpn].dirty;
-
-			machine->currentTLB = (machine->currentTLB + 1) % TLBSize;
+			handlePageFault(vpn);
 
 
-			cout << "from ipt:  vnp = " << ipt->entries[vpn].virtualPage << "  ppn = " << ipt->entries[vpn].physicalPage << endl;
-			cout << "    valid " << ipt->entries[vpn].valid << "  dirty  " << ipt->entries[vpn].dirty << endl;
 
-			//machine->tlb[machine->currentTLB].virtualPage = ipt->entries[vpn].virtualPage;
-			//machine->tlb[machine->currentTLB].physicalPage = ipt->entries[vpn].physicalPage;
-			//machine->tlb[machine->currentTLB].valid = ipt->entries[vpn].valid;
-			//machine->tlb[machine->currentTLB].readOnly = ipt->entries[vpn].readOnly;
-			//machine->tlb[machine->currentTLB].use = ipt->entries[vpn].use;
-			//machine->tlb[machine->currentTLB].dirty = ipt->entries[vpn].dirty;
+			//cout << "from pagetable:  vnp = " << currentThread->space->pageTable[vpn].virtualPage << "  ppn = " << currentThread->space->pageTable[vpn].physicalPage << endl;
+			//cout << "    valid " << currentThread->space->pageTable[vpn].valid << "  dirty  " << currentThread->space->pageTable[vpn].dirty << endl;
+
+			//machine->tlb[machine->currentTLB].virtualPage = currentThread->space->pageTable[vpn].virtualPage;
+			//machine->tlb[machine->currentTLB].physicalPage = currentThread->space->pageTable[vpn].physicalPage;
+			//machine->tlb[machine->currentTLB].valid = currentThread->space->pageTable[vpn].valid;
+			//machine->tlb[machine->currentTLB].readOnly = currentThread->space->pageTable[vpn].readOnly;
+			//machine->tlb[machine->currentTLB].use = currentThread->space->pageTable[vpn].use;
+			//machine->tlb[machine->currentTLB].dirty = currentThread->space->pageTable[vpn].dirty;
 
 			//machine->currentTLB = (machine->currentTLB + 1) % TLBSize;
 
-			while (!currentThread->space->pageTable[vpn].valid) {
 
-			}
 
 
 		} else {
@@ -880,4 +921,7 @@ void ExceptionHandler(ExceptionType which) {
 			interrupt->Halt();
 		}
 
+	
+
 }
+

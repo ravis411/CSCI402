@@ -714,12 +714,13 @@ int handleMemoryFull() {
 int handleIPTMiss(int vpn) {
 	int ppn = -1;
 	//Allocate 1 pg memory and read page from exe into this page
-	ppn = system->pageTableBitMap->Find();
+	
 
+	ppn = system->pageTableBitMap->Find();
 	if (ppn == -1) {
 		ppn = handleMemoryFull();
 	}
-	//Update IPT, PageTable, and TLB
+	//Read page from executable. Update IPT, and PageTable
 
 
 	return ppn;
